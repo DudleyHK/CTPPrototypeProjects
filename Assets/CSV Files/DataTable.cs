@@ -8,6 +8,7 @@ namespace CSV
     /// </summary>
     public class DataTable
     {
+        // TODO: Add file Directory.
         public List<object> Data { get; set; }
         public string Name       { get; set; }
         public int    Rows       { get; set; }

@@ -115,11 +115,14 @@ namespace Mono.Csv
 			EmptyLineBehavior = emptyLineBehavior;
 		}
 
-		public static List<List<string>> ReadAll(string path, Encoding encoding) {
-			using (var sr = new StreamReader (path, encoding)) {
+		public static List<List<string>> ReadAll(string path, Encoding encoding) 
+        {
+			using (var sr = new StreamReader (path, encoding)) 
+            {
 				var cfr = new CsvFileReader(sr);
 				List<List<string>> dataGrid = new List<List<string>>();
-				if(cfr.ReadAll(dataGrid)) return dataGrid;
+				
+                if(cfr.ReadAll(dataGrid)) return dataGrid;
 			}
 			return null;
 		}
@@ -313,26 +316,68 @@ namespace Mono.Csv
 			Writer = new StreamWriter (path);
 		}
 	
-		public static void WriteAll(List<List<string>> dataGrid, string path, Encoding encoding) {
-			using (var sw = new StreamWriter(path, false, encoding)) {
+		public static void WriteAll(List<List<string>> dataGrid, string path, Encoding encoding) 
+        {
+			using (var sw = new StreamWriter(path, false, encoding)) 
+            {
 				var cfw = new CsvFileWriter(sw);
-				foreach(var row in dataGrid) {
+				foreach(var row in dataGrid) 
+                {
 					cfw.WriteRow(row);
 				}
 			}
 		}
 
-		public void WriteAll(List<List<string>> dataGrid) {
-			foreach (List<string> row in dataGrid) {
+
+
+        /// <summary>
+        /// Write a single element of a csv file. 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="id"></param>
+        /// <param name="path"></param>
+        /// <param name="encoding"></param>
+        public static void WriteToCell(string value, int id, string path, Encoding encoding = null)
+        {
+            if(encoding == null)
+                encoding = Encoding.GetEncoding("gbk");
+
+            var streamWriter = new StreamWriter(path, false, encoding);
+            var csvFileWriter = new CsvFileWriter(streamWriter);
+
+            var data = CsvFileReader.ReadAll(path, encoding);
+
+            for(int i = 0; i < data.Count; i++)
+            {
+                for(int j = 0; j < data[i].Count; j++)
+                {
+                    var index = CSV.CSVUtilities.Index(data[i].Count, i, j);
+                    if(index == id)
+                    {
+                        data[i][j] = value;
+                        return;
+                    }
+                }
+            }
+            csvFileWriter.WriteAll(data);
+        }
+
+        public void WriteAll(List<List<string>> dataGrid)
+        {
+			foreach (List<string> row in dataGrid) 
+            {
 				this.WriteRow (row);
 			}
 		}
 
-		/// <summary>
-		/// Writes a row of columns to the current CSV file.
-		/// </summary>
-		/// <param name="columns">The list of columns to write</param>
-		public void WriteRow (List<string> columns)
+
+
+
+        /// <summary>
+        /// Writes a row of columns to the current CSV file.
+        /// </summary>
+        /// <param name="columns">The list of columns to write</param>
+        public void WriteRow (List<string> columns)
 		{
 			// Verify required argument
 			if (columns == null)
@@ -346,10 +391,12 @@ namespace Mono.Csv
 			}
 		
 			// Write each column
-			for (int i = 0; i < columns.Count; i++) {
+			for (int i = 0; i < columns.Count; i++) 
+            {
 				// Add delimiter if this isn't the first column
 				if (i > 0)
 					Writer.Write (Delimiter);
+
 				// Write this column
 				if (columns [i].IndexOfAny (SpecialChars) == -1)
 					Writer.Write (columns [i]);
@@ -359,6 +406,8 @@ namespace Mono.Csv
 			Writer.Write ("\r\n");
 		}
 	
+
+
 		// Propagate Dispose to StreamWriter
 		public void Dispose ()
 		{

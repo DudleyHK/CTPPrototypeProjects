@@ -5,12 +5,6 @@ using UnityEngine;
 using Mono.Csv;
 
 
-/*
-    -   List of Lists could be dictonary with List<object> or List<ClassName> simple have three different lists.
-    -   Access based on type name.
-*/
-
-
 namespace CSV
 {
     public class CSVManager : ScriptableObject
@@ -37,22 +31,6 @@ namespace CSV
 
 
 
-
-        public static void Init()
-        {
-            if(initiailised)
-            {
-                Debug.Log("ERROR: Initialised already called");
-                return;
-            }
-
-            csvPath = Application.dataPath + "//Resources//CSVFiles//";
-            LoadFromResources();
-
-            initiailised = true;
-        }
-
-
         private void Update()
         {
             if(Input.GetKeyDown(KeyCode.W))
@@ -72,36 +50,52 @@ namespace CSV
             Read();
         }
 
+       
+
+
+
+
+
+        public static void Init(string csvFileDirectory = "/Resources/CSVFiles/")
+        {
+            if(initiailised)
+            {
+                Debug.Log("ERROR: Initialised already called");
+                return;
+            }
+            csvPath = Application.dataPath + csvFileDirectory;
+            LoadFromResources();
+
+            initiailised = true;
+        }
+
 
 
         /// <summary>
-        /// On Begin Load all files from resources and store them in a static Dictonary.
+        /// On Begin Load all files from resources and store them in a List.
         /// </summary>
         private static void LoadFromResources()
         {
-            csvAssets = new List<DataTable>();
-
-            var allCsvFiles = Resources.LoadAll(csvPath);
+            var allCsvFiles = Utilities.FilesInDirectory(csvPath);
             if(allCsvFiles.Length <= 0)
             {
                 Debug.Log("ERROR: No CSV Files exist at the location - " + csvPath);
                 return;
             }
 
-            foreach(var file in allCsvFiles)
+            csvAssets = new List<DataTable>();
+            foreach(var fileInfo in allCsvFiles)
             {
-                Debug.Log("Filename - " + file.name);
-                if(csvAssets.Exists(t => { return t.Name == file.name; }))
+                if(fileInfo.Name.Contains(".meta")) continue;
+
+                Debug.Log("Filename - " + fileInfo.Name);
+                if(csvAssets.Exists(t => { return t.Name == fileInfo.Name; }))
                 {
-                    Debug.Log("ERROR: DataTable - " + file.name + " already exists");
+                    Debug.Log("ERROR: DataTable - " + fileInfo.Name + " already exists");
                     continue;
                 }
-                var dataTable = LoadData(file.name);
-
-                csvAssets.Add(dataTable);
-                Debug.Log(dataTable.TableInfo());
+                InitialiseDataTable(fileInfo.Name);
             }
-
         }
 
 
@@ -111,12 +105,19 @@ namespace CSV
         /// </summary>
         /// <param name="filename"></param>
         /// <returns></returns>
-        public static DataTable LoadData(string filename)
+        public static void InitialiseDataTable(string filename)
         {
-            var dataFile   = CsvFileReader.ReadAll(csvPath + filename, System.Text.Encoding.GetEncoding("gbk"));
+            var name = filename.Replace(".csv", "");
+            if(csvAssets.Exists(t => { return t.Name == name; }))
+            {
+                Debug.Log("ERROR: The file - " + name + " already exists in the File List. Call GetTable to access...");
+                return;
+            }
 
+
+
+            var dataFile   = CsvFileReader.ReadAll(csvPath + filename, System.Text.Encoding.GetEncoding("gbk"));
             var data    = new List<object>();
-            var name    = filename.Replace(".csv", "");
             var rows    = dataFile.Count;
             var columns = 0;
 
@@ -132,12 +133,82 @@ namespace CSV
             }
             
             var dataTable = new DataTable(data, name, rows, columns);
-            return dataTable;
+            csvAssets.Add(dataTable);
+        }
+
+
+        /// <summary>
+        /// Use the name of the data table to identify and acquire it. 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static DataTable GetTable(string name)
+        {
+            if(csvAssets.Count <= 0)
+            {
+                Debug.Log("ERROR: File list is empty. Please initialise..");
+                return null;
+            }
+
+            if(!csvAssets.Exists(t => { return t.Name == name; }))
+            {
+                Debug.Log("ERROR: The file - " + name + " does not exist in the File list folder");
+                return null;
+            }
+            return csvAssets.Find(t => { return t.Name == name; });
         }
 
 
 
+        /// <summary>
+        /// Write out a single cell.
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <param name="value"></param>
+        /// <param name="id"></param>
+        public static void WriteSingle(DataTable dataTable, string value, int id)
+        {
+            if(!csvAssets.Exists(t => { return t.Name == dataTable.Name; }))
+            {
+                Debug.Log("MESSAGE: The file - " + dataTable.Name + " does not exist in the folder.");
+                return;
 
+                /// TODO: Create a new file and use that, issue: Unity not generating meta file after File.Create call.
+                ///CSVUtilities.NewFile(csvPath, filename);
+                ///InitialiseDataTable(filename);
+            }
+            
+            // TODO: Write the data into the DataTable.DAta
+            // TODO: This can go into the utilities folder.
+            
+            CsvFileWriter.WriteToCell(value, id, csvPath + dataTable.Name + ".csv");
+            //CsvFileWriter.WriteAll(new List<List<string>>(), csvPath + "NEW.csv", System.Text.Encoding.GetEncoding("gbk"));
+        }
+
+
+
+        public static void WriteColumnElement(string filename, string value, int columnID, int id)
+        {
+
+        }
+
+
+        public static void WriteAll(string filename, DataTable dataTable)
+        {
+           List<List<string>> outData = new List<List<string>>();
+            for(int i = 0; i < dataTable.Rows; i++)
+            {
+                List<string> row = new List<string>();
+
+                for(int j = 0; j < dataTable.Columns; j++)
+                {
+                    var index = CSVUtilities.Index(dataTable.Columns, i, j);
+                    row.Add((string)dataTable.Data[index]);
+                }
+                outData.Add(row);
+            }
+            CsvFileWriter.WriteAll(outData, csvPath + filename, System.Text.Encoding.GetEncoding("gbk"));
+        }
 
 
 
