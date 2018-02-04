@@ -6,19 +6,14 @@ using Mono.Csv;
 
 
 /*
-    -   Going to need functionality to enable the getting of a column of Row.
-    -   This should in under the CSVManager namespace but in a CSVUtilities class.
-    -   The CSVUtilities class has a bunch of static functions which you pass info to..
     -   List of Lists could be dictonary with List<object> or List<ClassName> simple have three different lists.
     -   Access based on type name.
 */
 
-    // TODO: When a table is loaded in its stored in a DataTable class
-
 
 namespace CSV
 {
-    public class CSVManager : MonoBehaviour
+    public class CSVManager : ScriptableObject
     {
         public List<int> Totals { get; internal set; }
         public List<float> Probabilities { get; internal set; }
@@ -31,19 +26,30 @@ namespace CSV
 
         private List<List<string>> gridData = new List<List<string>>();
         private List<List<string>> probabilityData = new List<List<string>>();
-        private string csvPath = "";
         private string csvTotalsFile = "Totals.csv";
         private string csvProbabsFile = "Probabilities.csv";
 
 
-        private void Start()
+
+        private static List<DataTable> csvAssets;
+        private static string csvPath = ""; //TODO: Can we access this data?
+        private static bool initiailised = false;
+
+
+
+
+        public static void Init()
         {
-            csvPath = Application.persistentDataPath + "//Assets//OutputData//";
+            if(initiailised)
+            {
+                Debug.Log("ERROR: Initialised already called");
+                return;
+            }
 
-            Totals = new List<int>();
-            Probabilities = new List<float>();
+            csvPath = Application.dataPath + "//Resources//CSVFiles//";
+            LoadFromResources();
 
-            Read();
+            initiailised = true;
         }
 
 
@@ -54,6 +60,86 @@ namespace CSV
                 Write();
             }
         }
+
+
+        private void OldStart()
+        {
+            csvPath = Application.persistentDataPath + "//Assets//Resources//";
+
+            Totals = new List<int>();
+            Probabilities = new List<float>();
+
+            Read();
+        }
+
+
+
+        /// <summary>
+        /// On Begin Load all files from resources and store them in a static Dictonary.
+        /// </summary>
+        private static void LoadFromResources()
+        {
+            csvAssets = new List<DataTable>();
+
+            var allCsvFiles = Resources.LoadAll(csvPath);
+            if(allCsvFiles.Length <= 0)
+            {
+                Debug.Log("ERROR: No CSV Files exist at the location - " + csvPath);
+                return;
+            }
+
+            foreach(var file in allCsvFiles)
+            {
+                Debug.Log("Filename - " + file.name);
+                if(csvAssets.Exists(t => { return t.Name == file.name; }))
+                {
+                    Debug.Log("ERROR: DataTable - " + file.name + " already exists");
+                    continue;
+                }
+                var dataTable = LoadData(file.name);
+
+                csvAssets.Add(dataTable);
+                Debug.Log(dataTable.TableInfo());
+            }
+
+        }
+
+
+
+        /// <summary>
+        /// Use a filename to create DataTable object which can be returned.
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns></returns>
+        public static DataTable LoadData(string filename)
+        {
+            var dataFile   = CsvFileReader.ReadAll(csvPath + filename, System.Text.Encoding.GetEncoding("gbk"));
+
+            var data    = new List<object>();
+            var name    = filename.Replace(".csv", "");
+            var rows    = dataFile.Count;
+            var columns = 0;
+
+            for(int i = 0; i < dataFile.Count; i++)
+            {
+                for(int j = 0; j < dataFile[i].Count; j++)
+                {
+                    if(i == 0) columns++;
+
+                    var cell = dataFile[i][j];
+                    data.Add(cell);
+                }
+            }
+            
+            var dataTable = new DataTable(data, name, rows, columns);
+            return dataTable;
+        }
+
+
+
+
+
+
 
         private void Read()
         {

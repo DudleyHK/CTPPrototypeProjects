@@ -8,27 +8,28 @@ namespace CSV
 {
     public class CSVUtilities : ScriptableObject
     {
-
         /// <summary>
         /// Get a specific list of column data from the dataTable.
         /// </summary>
         /// <param name="dataTable"></param>
-        /// <param name="columnID"></param>
+        /// <param name="columnNumber"></param>
         /// <returns></returns>
-        public static List<object> Column(DataTable dataTable, int columnID)
+        public static List<object> Column(DataTable dataTable, int columnNumber)
         {
+            columnNumber--; // Adjust to grid type.
+
             if(dataTable.Data.Count <= 0)
             {
                 Debug.Log("ERROR: List is empty");
                 return null;
             }
-            if(columnID > dataTable.Data.Count)
+            if(columnNumber > dataTable.Data.Count)
             {
                 Debug.Log("ERROR: ID is more than the size of the list");
                 return null;
             }
 
-            return null; // TODO: Return a complete column with all elements.
+            return GetColumnList(dataTable, columnNumber);
         }
 
         /// <summary>
@@ -39,6 +40,8 @@ namespace CSV
         /// <returns></returns>
         public static List<object> Row(DataTable dataTable, int rowID)
         {
+            rowID--;
+
             if(dataTable.Data.Count <= 0)
             {
                 Debug.Log("ERROR: List is empty");
@@ -50,7 +53,7 @@ namespace CSV
                 return null;
             }
            
-            return null; // TODO: Return a list of the elements from row ID
+            return GetRowList(dataTable, rowID);
         }
 
 
@@ -103,25 +106,44 @@ namespace CSV
             return row[index];
         }
 
+
+        /// <summary>
+        /// CSV Lists require a slightly different structure for getting the index. 
+        ///     Heres a helper so you don't have to remember it.
+        /// </summary>
+        /// <param name="column"></param>
+        /// <param name="i"></param>
+        /// <param name="j"></param>
+        /// <returns></returns>
+        public static int Index(int column, int i, int j)
+        {
+            return (column * i) + j;
+        }
+
         /// <summary>
         /// Return a list of Row Data.
         /// </summary>
         /// <param name="data"></param>
         /// <param name="rowID"></param>
         /// <returns></returns>
-        private static List<object> GetRowList(List<object> data, int rowID)
+        private static List<object> GetRowList(DataTable dataTable, int rowID)
         {
-            if(data.Count <= 0)
+            if(dataTable.Data.Count <= 0)
             {
                 Debug.Log("ERROR: Data count is less than zero");
                 return null;
             }
 
             var rowData = new List<object>();
-            for(int i = 0; i < data.Count; i++)
+            for(int i = 0; i < dataTable.Rows; i++)
             {
-                if(i != rowID) continue;
-                rowData.Add(data[i]);
+                if(rowID != i) continue;
+
+                for(int j = 0; j < dataTable.Columns; j++)
+                {
+                        var index = Index(dataTable.Columns, i, j);
+                        rowData.Add(dataTable.Data[index]);
+                }
             }
 
             return rowData;
@@ -134,24 +156,26 @@ namespace CSV
         /// <param name="data"></param>
         /// <param name="columnID"></param>
         /// <returns></returns>
-        private static List<object> GetColumnList(List<object> data, int columnID)
+        private static List<object> GetColumnList(DataTable dataTable, int columnID)
         {
-            if(data.Count <= 0)
+            if(dataTable.Data.Count <= 0)
             {
                 Debug.Log("ERROR: Data count is less than zero");
                 return null;
             }
 
             var columnData = new List<object>();
-            for(int i = 0; i < data.Count; i++)
+            for(int i = 0; i < dataTable.Rows; i++)
             {
-                if(columnID == 0 && i == 0)
-                    columnData.Add(data[i]);
-
-                if(i % columnID == 0)
-                    columnData.Add(data[i]);
+                for(int j = 0; j < dataTable.Columns; j++)
+                {
+                    if(columnID == j)
+                    {
+                        var index = Index(dataTable.Columns, i, j);
+                        columnData.Add(dataTable.Data[index]);
+                    }
+                }
             }
-
             return columnData;
         }
     }
