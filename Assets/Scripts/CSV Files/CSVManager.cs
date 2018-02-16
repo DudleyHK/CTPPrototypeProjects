@@ -19,7 +19,7 @@ namespace CSV
         private List<string> columnIds = new List<string>();
 
         private List<List<string>> gridData = new List<List<string>>();
-        private List<List<string>> probabilityData = new List<List<string>>();
+        // private List<List<string>> probabilityData = new List<List<string>>();
         private string csvTotalsFile = "Totals.csv";
         private string csvProbabsFile = "Probabilities.csv";
 
@@ -221,7 +221,7 @@ namespace CSV
 
         private void InitRead()
         {
-            var dataFile = CsvFileReader.ReadAll(csvPath + csvTotalsFile, System.Text.Encoding.GetEncoding("gbk"));
+            //var dataFile = CsvFileReader.ReadAll(csvPath + csvTotalsFile, System.Text.Encoding.GetEncoding("gbk"));
 
             for(int i = 0; i < gridData.Count; i++)
             {
@@ -270,7 +270,7 @@ namespace CSV
 
         private void ReadProbabilities()
         {
-            probabilityData = CsvFileReader.ReadAll(csvPath + csvProbabsFile, System.Text.Encoding.GetEncoding("gbk"));
+            //probabilityData = CsvFileReader.ReadAll(csvPath + csvProbabsFile, System.Text.Encoding.GetEncoding("gbk"));
             for(int i = 0; i < gridData.Count; i++)
             {
                 for(int j = 0; j < gridData[i].Count; j++)
@@ -417,7 +417,7 @@ namespace CSV
         /// <returns></returns>
         private int ConvertToListID(int rowID, int colID)
         {
-            var csvID = (rowID * columnIds.Count) + colID;
+            //var csvID = (rowID * columnIds.Count) + colID;
             //Debug.Log("MESSAGE: Csv - CsvID  " + csvID);
 
             colID -= 1;
@@ -445,7 +445,7 @@ namespace CSV
         /// <returns></returns>
         private int ConvertToCsvID(int rowID, int colID)
         {
-            var listID = (rowID * (columnIds.Count - 1)) + colID;
+            //var listID = (rowID * (columnIds.Count - 1)) + colID;
             //Debug.Log("MESSAGE: Csv - ListID " + listID);
 
             colID += 1;
