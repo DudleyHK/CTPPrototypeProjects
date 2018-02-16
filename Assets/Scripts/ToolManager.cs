@@ -5,6 +5,8 @@ using UnityEngine;
 public class ToolManager : MonoBehaviour 
 {
     [SerializeField]
+    private List<GameObject> m_allParts = new List<GameObject>();
+    [SerializeField]
     private List<RuntimeMatrix> m_runtimeMatrix;
     [SerializeField]
     private ParseManager m_parseManager;
@@ -17,6 +19,11 @@ public class ToolManager : MonoBehaviour
         // TODO: Error check these.
         m_parseManager      = GetComponent<ParseManager>();
         m_generationManager = GetComponent<GenerationManager>();
+
+        if(m_allParts.Count <= 0)
+        {
+            Debug.LogWarning("Missing level objects in allParts list. Must contain all parts of a level.");
+        }
     }
 
 
@@ -28,6 +35,8 @@ public class ToolManager : MonoBehaviour
         }
     }
 
+
+
     private bool Parse()
     {
         if(!m_parseManager.ParseLevel(out m_runtimeMatrix))
@@ -35,12 +44,13 @@ public class ToolManager : MonoBehaviour
             Debug.Log("ERROR: Parsing level.");
             return false;
         }
+        m_parseManager.ClearScene();
         return true;
     }
 
 
     private void Generate()
     {
-        if(!m_generationManager.Generate(m_runtimeMatrix)) Debug.Log("ERROR: Generating level.");
+        if(!m_generationManager.Generate(m_runtimeMatrix, m_allParts)) Debug.Log("ERROR: Generating level.");
     }
 }

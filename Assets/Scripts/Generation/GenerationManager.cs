@@ -4,6 +4,13 @@ using UnityEngine;
 
 public class GenerationManager : MonoBehaviour
 {
+    // TODO: User defined/ txt files. 
+    private enum FirstShape
+    {
+        Rectangle,
+        Circle,
+        Unassigned
+    }
     private enum SizeSelection
     {
         Higher,
@@ -14,24 +21,43 @@ public class GenerationManager : MonoBehaviour
 
     [SerializeField]
     private SizeSelection m_sizeSelection = SizeSelection.Unassigned;
+    [SerializeField]
+    private FirstShape m_initialShape = FirstShape.Unassigned;
 
     private List<SceneObject> m_newLevel;
+    private List<GameObject> m_spritePrefabs;
 
 
-    public bool Generate(List<RuntimeMatrix> runtimeMatrix)
+    public bool Generate(List<RuntimeMatrix> runtimeMatrix, List<GameObject> buildingMaterials)
     {
         if(runtimeMatrix.Count <= 0) return false;
 
-        m_newLevel = new List<SceneObject>();
+        Clean();
+
+
+        
 
         // start by picking a random shape.
-        var currentShape    = "Quad";
+        var currentShape    = InitialShape(runtimeMatrix);
         var currentSize     = Vector3.zero;
         var currentPosition = Vector3.zero;
 
         for(int i = 0; i < 5; i++)
         {
-            var rtm    = runtimeMatrix.Find(n => { return n.Name == currentShape; });
+            // Check for end of runtimeMatrix.
+            if(currentShape == "/0") continue;
+
+            var rtm = runtimeMatrix.Find(n => 
+            { 
+                return n.Name == currentShape; 
+            });
+
+            if(rtm == null)
+            {
+                Debug.LogWarning("ERROR: currentShape is " + "/0");
+                return false;
+            }
+
             var sizeID = SizeID(rtm);
             
             // TODO: Add different ways to get the position ID. Currently
@@ -51,10 +77,32 @@ public class GenerationManager : MonoBehaviour
             currentShape = NextShape(rtm);
         }
 
-        OutputNewLevel();
+        OutputNewLevelString();
+        BuildLevel(buildingMaterials);
+
         return true;
     }
 
+    /// <summary>
+    /// Currently select the first shape in the list. 
+    /// TODO: Implement different types of selection for this.
+    /// </summary>
+    /// <param name="rtm"></param>
+    /// <returns></returns>
+    private string InitialShape(List<RuntimeMatrix> rtm)
+    {
+        switch(m_initialShape)
+        {
+            case FirstShape.Rectangle:
+                return FirstShape.Rectangle.ToString();
+            case FirstShape.Circle:
+                FirstShape.Circle.ToString();
+                break;
+            default:
+                return rtm[0].Name;
+        }
+        return rtm[0].Name;
+    }
 
     /// <summary>
     /// Get the ID of size list to use.
@@ -69,7 +117,7 @@ public class GenerationManager : MonoBehaviour
         SizeSelection sizeSelection = m_sizeSelection;
         if(sizeSelection == SizeSelection.Unassigned)
         {
-            Debug.Log("MESSAGE: Size selection type has not been assigned. Defaulting at random.");
+            // Debug.Log("MESSAGE: Size selection type has not been assigned. Defaulting at random.");
             sizeSelection = SizeSelection.Random;
         }
 
@@ -136,12 +184,20 @@ public class GenerationManager : MonoBehaviour
 
         var cell = rtm.TransitionMatrix[index];
         var to = cell[1] as string;
+        Debug.Log("MESSAGE: to - " + to);
+        // TODO: Handle what happens if a shape with an end point in it comes in?
+        //          Use opportunity to add some randomness.
+
+
 
         return to;
     }
 
 
-    private void OutputNewLevel()
+    /// <summary>
+    /// Debug output the each object to be generated.
+    /// </summary>
+    private void OutputNewLevelString()
     {
 #if UNITY_EDITOR
         Debug.Log("New Level <Type, Size, Position>");
@@ -150,5 +206,39 @@ public class GenerationManager : MonoBehaviour
             Debug.Log(obj.Name + " : " + obj.Size + " : " + obj.Position);
         }
 #endif
+    }
+
+
+    private void BuildLevel(List<GameObject> buildingMaterials)
+    {
+        foreach(var data in m_newLevel)
+        {
+            var buildingMaterial = buildingMaterials.Find(n => { return n.name == data.Name; });
+            if(buildingMaterial == null)
+            {
+                Debug.LogWarning("Building materials does not contain the object - " + data.Name);
+                continue;
+            }
+
+            var obj = Instantiate(buildingMaterial);
+            obj.transform.localScale = data.Size;
+            obj.transform.position   = data.Position;
+            m_spritePrefabs.Add(obj);
+        }
+    }
+
+
+    private void Clean()
+    {
+        if(m_spritePrefabs != null)
+        {
+            foreach(var obj in m_spritePrefabs)
+            {
+                Destroy(obj);
+            }
+        }
+
+        m_spritePrefabs = new List<GameObject>();
+        m_newLevel      = new List<SceneObject>();
     }
 }
