@@ -41,7 +41,7 @@ public class ToolManager : MonoBehaviour
     {
         if(!m_parseManager.ParseLevel(out m_runtimeMatrix))
         {
-            Debug.Log("ERROR: Parsing level.");
+            Debug.LogWarning("ERROR: Parsing level.");
             return false;
         }
         m_parseManager.ClearScene();
@@ -51,6 +51,6 @@ public class ToolManager : MonoBehaviour
 
     private void Generate()
     {
-        if(!m_generationManager.Generate(m_runtimeMatrix, m_allParts)) Debug.Log("ERROR: Generating level.");
+        if(!m_generationManager.Generate(m_runtimeMatrix, m_allParts)) Debug.LogWarning("ERROR: Generating level.");
     }
 }

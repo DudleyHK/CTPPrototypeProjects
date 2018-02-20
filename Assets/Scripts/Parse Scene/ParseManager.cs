@@ -6,7 +6,9 @@ using UnityEngine;
 
 public class ParseManager : MonoBehaviour
 {
+    [SerializeField]
     private List<SceneObject> m_sceneObjects    = new List<SceneObject>();
+    [SerializeField]
     private List<GameObject> m_visibleObjects;
 
 
@@ -32,7 +34,17 @@ public class ParseManager : MonoBehaviour
 
             if(findMatrix != null)
             {
-                findMatrix.AddRow(sceneObject.Name, m_sceneObjects[i + 1].Name);
+                // HACKHACK: 
+                if(i == (m_sceneObjects.Count - 1))
+                {
+                    // Add the last value in a line end.
+                    findMatrix.AddRow(sceneObject.Name, "/0");
+                }
+                else
+                {
+                    findMatrix.AddRow(sceneObject.Name, m_sceneObjects[i + 1].Name);
+                }
+                
                 findMatrix.SetSizeAndPosition(sceneObject.Size, sceneObject.Position);
             }
             else
@@ -101,7 +113,7 @@ public class ParseManager : MonoBehaviour
         m_visibleObjects = new List<GameObject>(GameObject.FindGameObjectsWithTag("LevelObject"));
         if(m_visibleObjects.Count <= 0)
         {
-            Debug.Log("ERROR: There are no level objects in the scene.. Have you applied the tags?");
+            Debug.LogWarning("ERROR: There are no level objects in the scene.. Have you applied the tags?");
             return false;
         }
 
