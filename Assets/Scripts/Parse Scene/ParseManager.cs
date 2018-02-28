@@ -143,17 +143,32 @@ public class ParseManager : MonoBehaviour
     public Dictionary<string, List<int>> ParseHeightLevel(bool parseLevel = false)
     {
         // Debug Height Level Inputs.
-        //List<int> debugLevelInput = new List<int>(new int[] { 2, 0, 0, 1, 2, 3, 0, 1, 0, 0 });
-        List<int> debugLevelInput = new List<int>(new int[] { 0, 3, 0, 4, 0, 3, 4, 5, 7, 0 });
+        List<int> debugLevelInput = new List<int>(new int[] { 2, 0, 0, 1, 2, 3, 0, 1, 0, 0 });
+        //List<int> debugLevelInput = new List<int>(new int[] { 0, 3, 0, 4, 0, 3, 4, 5, 7, 0 });
         
 
         // TODO: Load the m_transitionMatrix from the PlayerPrefs if it exists. 
-        LoadTransitionMatrix();
         ClearTransitionMatrix();
+        LoadTransitionMatrix();
         ParseHeightInput(debugLevelInput, parseLevel);
         SaveTransitionMatrix();
 
         return m_transitionMatrix;
+    }
+
+
+    /// <summary>
+    /// Use with caution. 
+    /// Clears the transitionmatrix text file. 
+    /// </summary>
+    public void FlushTextFile()
+    {
+        if(System.IO.File.Exists(Application.dataPath + "/Resources" + "/TransitionMatrix.txt"))
+        {
+            var streamWriter = new System.IO.StreamWriter(Application.dataPath + "/Resources" + "/TransitionMatrix.txt");
+            streamWriter.Flush();
+            streamWriter.Close();
+        }
     }
 
 
@@ -243,8 +258,6 @@ public class ParseManager : MonoBehaviour
                 
                 // To get the correct char variables
                 var row = line.Split(new char[] { ':', ' ' });
-                var rowList = new List<string>(row);
-                rowList.Remove("");
                 
                 var typeChar = row[0][0]; // The first char in the first part of the row. 
                 var data     = row[1];    // Get a list of the values.

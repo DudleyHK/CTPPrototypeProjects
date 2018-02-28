@@ -35,21 +35,22 @@ public class GenerationManager : MonoBehaviour
 
     public bool Generate(List<RuntimeMatrix> runtimeMatrix, List<GameObject> buildingMaterials, uint levelSize)
     {
-        if(runtimeMatrix.Count <= 0) return false;
+        if(runtimeMatrix.Count <= 0)
+            return false;
 
         Clean();
 
         // start by picking a random shape.
-        var currentShape    = InitialShape(runtimeMatrix);
-        var currentSize     = Vector3.zero;
+        var currentShape = InitialShape(runtimeMatrix);
+        var currentSize = Vector3.zero;
         var currentPosition = Vector3.zero;
 
         Debug.Log("MESSAGE: Number of scene objects " + levelSize);
         for(var i = 0; i < levelSize; i++)
         {
-            var rtm = runtimeMatrix.Find(n => 
-            { 
-                return n.Name == currentShape; 
+            var rtm = runtimeMatrix.Find(n =>
+            {
+                return n.Name == currentShape;
             });
 
             if(rtm == null)
@@ -68,17 +69,17 @@ public class GenerationManager : MonoBehaviour
 
 
             var sizeID = SizeID(rtm);
-            
+
             // TODO: Add different ways to get the position ID. Currently
             //          it's hard coded to get the same as what is applied 
             //          when the level is parsed.
-            var posID  = sizeID;
+            var posID = sizeID;
 
             //TODO: Error check ids for < 0
-            
+
             currentSize = rtm.SizeList[sizeID];
             currentPosition = rtm.PositionList[posID];
-            
+
             // Add new scene object to list.
             m_newLevel.Add(new SceneObject(currentShape, currentSize, currentPosition));
 
@@ -107,7 +108,7 @@ public class GenerationManager : MonoBehaviour
             case FirstShape.Circle:
                 return FirstShape.Circle.ToString();
         }
-       
+
         // TODO: Change this to use the shape furthest left.  
         return rtm[0].Name;
     }
@@ -227,7 +228,7 @@ public class GenerationManager : MonoBehaviour
 
             var obj = Instantiate(buildingMaterial);
             obj.transform.localScale = data.Size;
-            obj.transform.position   = data.Position;
+            obj.transform.position = data.Position;
             m_spritePrefabs.Add(obj);
         }
     }
@@ -244,21 +245,25 @@ public class GenerationManager : MonoBehaviour
         }
 
         m_spritePrefabs = new List<GameObject>();
-        m_newLevel      = new List<SceneObject>();
+        m_newLevel = new List<SceneObject>();
     }
 
     #endregion
 
     #region NumbersAsHeight
+    [SerializeField]
+    private GameObject tilePrefab;
 
+    private List<GameObject> tiles;
 
     /// <summary>
     /// Generate a single level looking only at the one previous tile.
     /// </summary>
     /// <param name="transitionMatrix"></param>
-    public void GenerateNumberLevel(Dictionary<string, List<int>> transitionMatrix)
+    public string GenerateNumberLevel(Dictionary<string, List<int>> transitionMatrix)
     {
         var output = "";
+
         // start from the first from in the Dictonary
         var value = transitionMatrix.First().Key;
         for(int i = 0; i < 10; i++)
@@ -266,20 +271,52 @@ public class GenerationManager : MonoBehaviour
             // TODO: Write to file. 
             // Output to text file/ debug output or list.
             output += value + ", ";
-            
+
             // get the list from that from value.
             var fromList = transitionMatrix[value];
 
             // TODO: Based on x number of previous tiles what is the next one going to be. 
             // select random index/ value from the list.
             var randID = Random.Range(0, fromList.Count);
-            var from   = fromList[randID];
-            
-            // set from value as value.
-            value = from.ToString(); 
-        }
+            var from = fromList[randID];
 
+            // set from value as value.
+            value = from.ToString();
+        }
         Debug.Log("Level Heights: " + output);
+
+        return output;
+    }
+
+
+    public void MapTiles(List<float> heights, string textHeightLevel, float startX, float increment)
+    {
+        // Set level on screen to inactive.
+        if(tiles != null)
+            foreach(var tile in tiles)
+                Destroy(tile);
+        //////////////////////////////////
+
+
+        tiles = new List<GameObject>();
+        for(int i = 0; i < textHeightLevel.Length; i++)
+        {
+            var elem = textHeightLevel[i];
+            var result = 0;
+
+            if(!int.TryParse(elem.ToString(), out result)) continue;
+
+            // Element is used as the index for the heights list. 
+            var heightID = int.Parse(elem.ToString());
+            var yPos = heights[heightID];
+            var xPos = startX;
+
+            var tile = Instantiate(tilePrefab, new Vector2(xPos, yPos), Quaternion.identity);
+            tiles.Add(tile);
+
+
+            startX += increment;
+        }
     }
 
     #endregion
