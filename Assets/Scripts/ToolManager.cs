@@ -65,6 +65,7 @@ public class ToolManager : MonoBehaviour
         
         // Gather all tiles of the scene, only once. 
         m_parseManager.ParseLevel(m_heights);
+        Debug.LogWarning("Warning: Level Parsed");
     }
 
 
@@ -81,14 +82,6 @@ public class ToolManager : MonoBehaviour
             //{
             //    Generate();
             //}
-        }
-
-
-        if((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
-            Input.GetKeyDown(KeyCode.Delete))
-        {
-            Debug.LogWarning("Warning: Transition Matrix File of Tile Heights has been cleared.");
-            m_parseManager.FlushTextFile();
         }
     }
 

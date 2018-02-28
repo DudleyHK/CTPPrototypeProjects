@@ -184,7 +184,7 @@ public class ParseManager : MonoBehaviour
     /// Use with caution. 
     /// Clears the transitionmatrix text file. 
     /// </summary>
-    public void FlushTextFile()
+    public static void FlushTextFile()
     {
         if(System.IO.File.Exists(Application.dataPath + "/Resources" + "/TransitionMatrix.txt"))
         {

@@ -26,5 +26,14 @@ public class Utilities
         clearMethod.Invoke(null, null);
 
     }
+
+
+    [UnityEditor.MenuItem("Tools/Clear Transition File %delete")]
+    static void ClearTransitionFile()
+    {
+        UnityEngine.Debug.LogWarning("Warning: Transition Matrix File of Tile Heights has been cleared.");
+        ParseManager.FlushTextFile();
+    }
+
 #endif
 }
