@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -128,6 +129,7 @@ public class ParseManager : MonoBehaviour
         return true;
     }
 
+
     #endregion
 
 
@@ -135,22 +137,43 @@ public class ParseManager : MonoBehaviour
 
     [SerializeField]
     private Dictionary<string, List<int>> m_transitionMatrix = new Dictionary<string, List<int>>();
+    
+    private List<int> m_tileHeights;
+    /// <summary>
+    /// This version is to order the tiles in order of x position. 
+    /// </summary>
+    /// <returns></returns>
+    public bool ParseLevel(List<float> heights)
+    {
+        var tempVisibleObjects = new List<GameObject>(GameObject.FindGameObjectsWithTag("LevelObject"));
+        if(tempVisibleObjects.Count <= 0)
+        {
+            Debug.LogWarning("Warning: There are no level objects in the scene.. Have you applied the tags?");
+            return false;
+        }
+        m_visibleObjects = new List<GameObject>(tempVisibleObjects.OrderBy(n => n.transform.localPosition.x));
 
-     
+       // TODO: Reset on command
+        m_tileHeights = new List<int>();
+        foreach(var tile in m_visibleObjects)
+        {
+            var heightID = heights.IndexOf(tile.transform.localPosition.y);
+            m_tileHeights.Add(heightID);
+        }
+
+
+        return true;
+    }
+
     /// <summary>
     /// Add each to value to the bag of to values.
     /// </summary>
     public Dictionary<string, List<int>> ParseHeightLevel(bool parseLevel = false)
     {
-        // Debug Height Level Inputs.
-        List<int> debugLevelInput = new List<int>(new int[] { 2, 0, 0, 1, 2, 3, 0, 1, 0, 0 });
-        //List<int> debugLevelInput = new List<int>(new int[] { 0, 3, 0, 4, 0, 3, 4, 5, 7, 0 });
-        
-
         // TODO: Load the m_transitionMatrix from the PlayerPrefs if it exists. 
         ClearTransitionMatrix();
         LoadTransitionMatrix();
-        ParseHeightInput(debugLevelInput, parseLevel);
+        ParseHeightInput(m_tileHeights, parseLevel);
         SaveTransitionMatrix();
 
         return m_transitionMatrix;

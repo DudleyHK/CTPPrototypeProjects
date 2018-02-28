@@ -19,10 +19,14 @@ public class ToolManager : MonoBehaviour
     private List<float> m_heights;
     [SerializeField]
     private int m_height = 0;
+
+    // TODO: Draw a gizmo box which changes size in the editor. 
     [SerializeField]
     private float m_lowestYPosition = 0;
     [SerializeField]
     private float m_lowestXPosition = 0;
+
+    // TODO: Draw a gizmo box which changes size in the editor. 
     [SerializeField]
     private float m_YSize = 69f; // NOTE: This is hardcoded for this sprite tilemap.
     [SerializeField]
@@ -57,6 +61,10 @@ public class ToolManager : MonoBehaviour
             m_heights.Add(m_lowestYPosition);
             m_lowestYPosition += m_YSize;
         }
+
+        
+        // Gather all tiles of the scene, only once. 
+        m_parseManager.ParseLevel(m_heights);
     }
 
 
@@ -64,26 +72,33 @@ public class ToolManager : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Return))
         {
-            if(Parse())
-            {
-                //Generate();
-                var textHeightLevel = m_generationManager.GenerateNumberLevel(m_transitionMatrix);
-                m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
-            }
+            m_transitionMatrix = m_parseManager.ParseHeightLevel(true);
+
+            var textHeightLevel = m_generationManager.GenerateNumberLevel(m_transitionMatrix);
+            m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
+
+            //if(Parse())
+            //{
+            //    Generate();
+            //}
         }
 
 
-        if(Input.GetKey(KeyCode.LeftShift | KeyCode.RightShift) ||
+        if((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) &&
             Input.GetKeyDown(KeyCode.Delete))
         {
+            Debug.LogWarning("Warning: Transition Matrix File of Tile Heights has been cleared.");
             m_parseManager.FlushTextFile();
         }
     }
 
-
-    private bool Parse()
+    /// <summary>
+    /// Dump all levelobjects into the parse lists. 
+    /// </summary>
+    /// <returns></returns>
+    private bool GatherTiles()
     {
-        m_transitionMatrix = m_parseManager.ParseHeightLevel(true);
+       // m_parseManager.ParseLevel();
 
         //if(!m_parseManager.ParseLevel(out m_runtimeMatrix))
         //{

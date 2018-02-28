@@ -253,6 +253,8 @@ public class GenerationManager : MonoBehaviour
     #region NumbersAsHeight
     [SerializeField]
     private GameObject tilePrefab;
+    [SerializeField]
+    private int m_levelLength = 10;
 
     private List<GameObject> tiles;
 
@@ -266,7 +268,7 @@ public class GenerationManager : MonoBehaviour
 
         // start from the first from in the Dictonary
         var value = transitionMatrix.First().Key;
-        for(int i = 0; i < 10; i++)
+        for(int i = 0; i < m_levelLength; i++)
         {
             // TODO: Write to file. 
             // Output to text file/ debug output or list.
