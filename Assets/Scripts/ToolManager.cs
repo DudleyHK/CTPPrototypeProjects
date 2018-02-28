@@ -9,9 +9,11 @@ public class ToolManager : MonoBehaviour
     [SerializeField]
     private List<RuntimeMatrix> m_runtimeMatrix;
     [SerializeField]
-    private ParseManager m_parseManager;
+    private ParseManager m_parseManager; 
     [SerializeField]
     private GenerationManager m_generationManager;
+    [SerializeField]
+    private uint m_levelSize = 0;
 
 
     private void Awake()
@@ -22,7 +24,12 @@ public class ToolManager : MonoBehaviour
 
         if(m_allParts.Count <= 0)
         {
-            Debug.LogWarning("Missing level objects in allParts list. Must contain all parts of a level.");
+            Debug.LogWarning("ERROR: Missing level objects in allParts list. Must contain all parts of a level.");
+        }
+
+        if(!m_parseManager.InitSceneObjects(out m_levelSize))
+        {
+            Debug.LogWarning("ERROR: Initialising ParseManager scene objects failed.");
         }
     }
 
@@ -31,26 +38,33 @@ public class ToolManager : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Return))
         {
-            if(Parse()) Generate();
+            if(Parse())
+            { 
+                //Generate();
+            }
         }
     }
 
 
-
     private bool Parse()
     {
-        if(!m_parseManager.ParseLevel(out m_runtimeMatrix))
-        {
-            Debug.LogWarning("ERROR: Parsing level.");
-            return false;
-        }
-        m_parseManager.ClearScene();
+        var transitionMatrix = m_parseManager.ParseHeightLevel(true);
+
+        m_generationManager.GenerateNumberLevel(transitionMatrix);
+
+
+        //if(!m_parseManager.ParseLevel(out m_runtimeMatrix))
+        //{
+        //    Debug.LogWarning("ERROR: Parsing level.");
+        //    return false;
+        //}
+        //m_parseManager.ClearScene();
         return true;
     }
 
 
     private void Generate()
     {
-        if(!m_generationManager.Generate(m_runtimeMatrix, m_allParts)) Debug.LogWarning("ERROR: Generating level.");
+        if(!m_generationManager.Generate(m_runtimeMatrix, m_allParts, m_levelSize)) Debug.LogWarning("ERROR: Generating level.");
     }
 }

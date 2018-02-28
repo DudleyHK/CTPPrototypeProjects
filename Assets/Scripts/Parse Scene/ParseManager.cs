@@ -5,19 +5,15 @@ using UnityEngine;
 
 
 public class ParseManager : MonoBehaviour
-{
+{ 
+    #region SpriteTiles
+
     [SerializeField]
     private List<SceneObject> m_sceneObjects    = new List<SceneObject>();
     [SerializeField]
     private List<GameObject> m_visibleObjects;
 
-
-    private void Start()
-    {
-        if(!InitSceneObjects()) return;
-    }
-
-
+    
     /// <summary>
     /// Parse all features in the level. 
     /// </summary>
@@ -34,7 +30,7 @@ public class ParseManager : MonoBehaviour
 
             if(findMatrix != null)
             {
-                // HACKHACK: 
+                // HACK: 
                 if(i == (m_sceneObjects.Count - 1))
                 {
                     // Add the last value in a line end.
@@ -52,11 +48,11 @@ public class ParseManager : MonoBehaviour
                 var rtm = new RuntimeMatrix(sceneObject.Name);
                 rtm.SetSizeAndPosition(sceneObject.Size, sceneObject.Position);
                 
-                // HACKHACK: If last i set to valut to default.
+                // HACK: If last i set to valut to default.
                 if(i == (m_sceneObjects.Count - 1))
                 {
                     // Add the last value in a line end.
-                    rtm.AddRow(sceneObject.Name, "/0");
+                    //rtm.AddRow(sceneObject.Name, "/0");
                 }
                 else
                 {
@@ -100,7 +96,7 @@ public class ParseManager : MonoBehaviour
     ///     isn't being considered.
     /// </summary>
     /// <returns></returns>
-    private bool InitSceneObjects()
+    public bool InitSceneObjects(out uint levelSize)
     {
         /// Test Level Objects.
         /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(5, 5, 0), new Vector3(1, 1, 0)));
@@ -109,6 +105,8 @@ public class ParseManager : MonoBehaviour
         /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(10, 2, 0), new Vector3(7, 1, 0)));
         /// m_sceneObjects.Add(new SceneObject("Circle", new Vector3(7, 7, 0), new Vector3(9, 1, 0)));
         /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(3, 11, 0), new Vector3(10, 1, 0)));
+        
+        levelSize = 0;
 
         m_visibleObjects = new List<GameObject>(GameObject.FindGameObjectsWithTag("LevelObject"));
         if(m_visibleObjects.Count <= 0)
@@ -125,6 +123,171 @@ public class ParseManager : MonoBehaviour
 
             m_sceneObjects.Add(new SceneObject(name, size, position));
         }
+
+        levelSize = (uint)m_sceneObjects.Count;
         return true;
     }
+
+    #endregion
+
+
+    #region NumbersAsHeight
+
+    [SerializeField]
+    private Dictionary<string, List<int>> m_transitionMatrix = new Dictionary<string, List<int>>();
+
+     
+    /// <summary>
+    /// Add each to value to the bag of to values.
+    /// </summary>
+    public Dictionary<string, List<int>> ParseHeightLevel(bool parseLevel = false)
+    {
+        // Debug Height Level Inputs.
+        //List<int> debugLevelInput = new List<int>(new int[] { 2, 0, 0, 1, 2, 3, 0, 1, 0, 0 });
+        List<int> debugLevelInput = new List<int>(new int[] { 0, 3, 0, 4, 0, 3, 4, 5, 7, 0 });
+        
+
+        // TODO: Load the m_transitionMatrix from the PlayerPrefs if it exists. 
+        LoadTransitionMatrix();
+        ClearTransitionMatrix();
+        ParseHeightInput(debugLevelInput, parseLevel);
+        SaveTransitionMatrix();
+
+        return m_transitionMatrix;
+    }
+
+
+
+    /// <summary>
+    /// Clear the matrix is it has been tampered with in anyway. 
+    /// </summary>
+    private void ClearTransitionMatrix()
+    {
+        if(m_transitionMatrix.Count <= 0 || m_transitionMatrix == null)
+            return;
+
+        m_transitionMatrix.Clear();
+    }
+
+
+    /// <summary>
+    /// if parselevel is true parse the heights passed in. 
+    /// // NOTE: List<int> levelInput is hardcoded as type for the m_transitionMatrix
+    /// </summary>
+    /// <param name="parseLevel"></param>
+    private void ParseHeightInput(List<int> levelInput, bool parseLevel)
+    {
+        if(parseLevel)
+        {
+            for(var i = 0; i < levelInput.Count; i++)
+            {
+                var from = levelInput[i].ToString();
+                var toID = i + 1;
+
+                if(toID == levelInput.Count)
+                    break;
+
+                if(!m_transitionMatrix.ContainsKey(from))
+                {
+                    m_transitionMatrix.Add(from, new List<int>(new int[] { levelInput[toID] }));
+                }
+                else
+                {
+                    m_transitionMatrix[from].Add(levelInput[toID]);
+                }
+            }
+        }
+    }
+
+
+    // TODO: Put in utility function.
+    private void SaveTransitionMatrix()
+    {
+        if(System.IO.File.Exists(Application.dataPath + "/Resources" + "/TransitionMatrix.txt"))
+        {
+            var streamWriter = new System.IO.StreamWriter(Application.dataPath + "/Resources" + "/TransitionMatrix.txt");
+
+            foreach(var fromValue in m_transitionMatrix)
+            {
+                streamWriter.WriteLine("Type:" + fromValue.Key);
+                streamWriter.Write("Probabilities:");
+                foreach(var toValue in fromValue.Value)
+                {
+                    streamWriter.Write(toValue + ",");
+                }
+                streamWriter.WriteLine();
+                streamWriter.WriteLine();
+
+            }
+            streamWriter.Close();
+        }
+        else
+        {
+            Debug.LogWarning("INVALID: File doesn't exist. transitionmatrix will start fresh.");
+        }
+    }
+
+    private void LoadTransitionMatrix()
+    {
+        if(System.IO.File.Exists(Application.dataPath + "/Resources" + "/TransitionMatrix.txt"))
+        {
+            // Read the file. 
+            var streamReader = new System.IO.StreamReader(Application.dataPath + "/Resources" + "/TransitionMatrix.txt");
+            var type = "";
+            var line = "";
+
+            // get the current line, while the current line is not null 
+            while((line = streamReader.ReadLine()) != null)
+            {
+                if(line == "") continue;
+                
+                // To get the correct char variables
+                var row = line.Split(new char[] { ':', ' ' });
+                var rowList = new List<string>(row);
+                rowList.Remove("");
+                
+                var typeChar = row[0][0]; // The first char in the first part of the row. 
+                var data     = row[1];    // Get a list of the values.
+
+                if(typeChar == 'T')
+                {
+                    foreach(var value in data)
+                    {                        
+                        if(value == ',') continue;
+
+                        // Get the from part of this transition matrix row. 
+                        type = value.ToString();
+                        m_transitionMatrix.Add(type, new List<int>());
+                    }
+                }
+                else if(typeChar == 'P')
+                {
+                    foreach(var value in data)
+                    {
+                        if(value == ',') continue;
+                        if(m_transitionMatrix.ContainsKey(type))
+                        {
+                            // TODO: This is specific to a List<int>
+                            m_transitionMatrix[type].Add(int.Parse(value.ToString()));
+                        }
+                        else
+                        {
+                            Debug.LogWarning("Warning: Probability values are being writing before type.");
+                        }
+                    }
+                }
+                else
+                {
+                    // Do nothing. 
+                }
+            }
+            streamReader.Close();
+        }
+        else
+        {
+            Debug.LogWarning("INVALID: File doesn't exist. transitionmatrix will start fresh");
+        }
+    }
+
+    #endregion
 }

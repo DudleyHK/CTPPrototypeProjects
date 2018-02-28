@@ -1,9 +1,13 @@
-﻿using System.Collections;
+﻿using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class GenerationManager : MonoBehaviour
 {
+    #region SpriteTiles
+
+
     // TODO: User defined/ txt files. 
     private enum FirstShape
     {
@@ -19,34 +23,30 @@ public class GenerationManager : MonoBehaviour
         Unassigned
     }
 
-    [SerializeField]
+    // TODO: Not used yet,
+    //[SerializeField]
     private SizeSelection m_sizeSelection = SizeSelection.Unassigned;
-    [SerializeField]
+    //[SerializeField]
     private FirstShape m_initialShape = FirstShape.Unassigned;
 
     private List<SceneObject> m_newLevel;
     private List<GameObject> m_spritePrefabs;
 
 
-    public bool Generate(List<RuntimeMatrix> runtimeMatrix, List<GameObject> buildingMaterials)
+    public bool Generate(List<RuntimeMatrix> runtimeMatrix, List<GameObject> buildingMaterials, uint levelSize)
     {
         if(runtimeMatrix.Count <= 0) return false;
 
         Clean();
-
-
-        
 
         // start by picking a random shape.
         var currentShape    = InitialShape(runtimeMatrix);
         var currentSize     = Vector3.zero;
         var currentPosition = Vector3.zero;
 
-        for(int i = 0; i < 5; i++)
+        Debug.Log("MESSAGE: Number of scene objects " + levelSize);
+        for(var i = 0; i < levelSize; i++)
         {
-            // Check for end of runtimeMatrix.
-            if(currentShape == "/0") continue;
-
             var rtm = runtimeMatrix.Find(n => 
             { 
                 return n.Name == currentShape; 
@@ -54,9 +54,18 @@ public class GenerationManager : MonoBehaviour
 
             if(rtm == null)
             {
-                Debug.LogWarning("ERROR: currentShape is " + "/0");
-                return false;
+                Debug.LogWarning("ERROR: runtime matrix is null for currentShape - " + currentShape);
+                break;
             }
+
+            // Check for end of runtimeMatrix.
+            if(currentShape == "/0")
+            {
+                currentShape = NextShape(rtm);
+                Debug.LogWarning("ERROR: currentShape is /0.. Force select new - " + currentShape);
+                continue;
+            }
+
 
             var sizeID = SizeID(rtm);
             
@@ -96,11 +105,10 @@ public class GenerationManager : MonoBehaviour
             case FirstShape.Rectangle:
                 return FirstShape.Rectangle.ToString();
             case FirstShape.Circle:
-                FirstShape.Circle.ToString();
-                break;
-            default:
-                return rtm[0].Name;
+                return FirstShape.Circle.ToString();
         }
+       
+        // TODO: Change this to use the shape furthest left.  
         return rtm[0].Name;
     }
 
@@ -121,24 +129,26 @@ public class GenerationManager : MonoBehaviour
             sizeSelection = SizeSelection.Random;
         }
 
-
         switch(sizeSelection)
         {
             case SizeSelection.Higher:
-
-
                 break;
-
 
             case SizeSelection.Lower:
-
                 break;
-
 
             case SizeSelection.Random:
                 ID = Random.Range(0, rtm.SizeList.Count);
                 break;
         }
+        return ID;
+    }
+
+
+    private int PositionID(RuntimeMatrix rtm)
+    {
+        int ID = -1;
+
         return ID;
     }
 
@@ -184,11 +194,6 @@ public class GenerationManager : MonoBehaviour
 
         var cell = rtm.TransitionMatrix[index];
         var to = cell[1] as string;
-        Debug.Log("MESSAGE: to - " + to);
-        // TODO: Handle what happens if a shape with an end point in it comes in?
-        //          Use opportunity to add some randomness.
-
-
 
         return to;
     }
@@ -241,4 +246,41 @@ public class GenerationManager : MonoBehaviour
         m_spritePrefabs = new List<GameObject>();
         m_newLevel      = new List<SceneObject>();
     }
+
+    #endregion
+
+    #region NumbersAsHeight
+
+
+    /// <summary>
+    /// Generate a single level looking only at the one previous tile.
+    /// </summary>
+    /// <param name="transitionMatrix"></param>
+    public void GenerateNumberLevel(Dictionary<string, List<int>> transitionMatrix)
+    {
+        var output = "";
+        // start from the first from in the Dictonary
+        var value = transitionMatrix.First().Key;
+        for(int i = 0; i < 10; i++)
+        {
+            // TODO: Write to file. 
+            // Output to text file/ debug output or list.
+            output += value + ", ";
+            
+            // get the list from that from value.
+            var fromList = transitionMatrix[value];
+
+            // TODO: Based on x number of previous tiles what is the next one going to be. 
+            // select random index/ value from the list.
+            var randID = Random.Range(0, fromList.Count);
+            var from   = fromList[randID];
+            
+            // set from value as value.
+            value = from.ToString(); 
+        }
+
+        Debug.Log("Level Heights: " + output);
+    }
+
+    #endregion
 }

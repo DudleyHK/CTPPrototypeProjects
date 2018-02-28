@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 
 
-public class Utilities : UnityEditor.ScriptableWizard
+public class Utilities
 {
     public static FileInfo[] FilesInDirectory(string _path)
     { 
@@ -15,6 +15,7 @@ public class Utilities : UnityEditor.ScriptableWizard
         return fileInfo;
     }
 
+#if UNITY_EDITOR
     [UnityEditor.MenuItem("Tools/Clear Console %c")]
     static void ClearConsoleWizard()
     {
@@ -25,4 +26,5 @@ public class Utilities : UnityEditor.ScriptableWizard
         clearMethod.Invoke(null, null);
 
     }
+#endif
 }

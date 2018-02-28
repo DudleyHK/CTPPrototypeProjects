@@ -1,6 +1,6 @@
 fileFormatVersion: 2
 guid: 692bf9d33df29e048936a07adb833429
-timeCreated: 1519048859
+timeCreated: 1519677233
 licenseType: Free
 TextureImporter:
   fileIDToRecycleName:
@@ -804,9 +804,9 @@ TextureImporter:
       name: simple sprite sheet_42
       rect:
         serializedVersion: 2
-        x: 291
+        x: 292
         y: 650
-        width: 64
+        width: 63
         height: 70
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
@@ -962,7 +962,7 @@ TextureImporter:
         serializedVersion: 2
         x: 292
         y: 578
-        width: 64
+        width: 63
         height: 70
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
@@ -2117,10 +2117,10 @@ TextureImporter:
       name: simple sprite sheet_143
       rect:
         serializedVersion: 2
-        x: 576
-        y: 74
+        x: 577
+        y: 73
         width: 70
-        height: 70
+        height: 68
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}

@@ -1,0 +1,15 @@
+Type:0
+Probabilities:3,4,3,
+
+Type:3
+Probabilities:0,4,
+
+Type:4
+Probabilities:0,5,
+
+Type:5
+Probabilities:7,
+
+Type:7
+Probabilities:0,
+
