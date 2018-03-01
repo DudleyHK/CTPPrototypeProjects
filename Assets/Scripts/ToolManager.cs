@@ -16,9 +16,14 @@ public class ToolManager : MonoBehaviour
     private uint m_levelSize = 0;
 
     [SerializeField]
+    [Range(1, 5)]
+    private int m_backTracking = 3;
+    [SerializeField]
     private List<float> m_heights;
     [SerializeField]
     private int m_height = 0;
+    [SerializeField]
+    private bool m_parseLevel = true;
 
     // TODO: Draw a gizmo box which changes size in the editor. 
     [SerializeField]
@@ -62,10 +67,8 @@ public class ToolManager : MonoBehaviour
             m_lowestYPosition += m_YSize;
         }
 
-        
         // Gather all tiles of the scene, only once. 
         m_parseManager.ParseLevel(m_heights);
-        Debug.LogWarning("Warning: Level Parsed");
     }
 
 
@@ -73,33 +76,31 @@ public class ToolManager : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Return))
         {
-            m_transitionMatrix = m_parseManager.ParseHeightLevel(true);
-
-            var textHeightLevel = m_generationManager.GenerateNumberLevel(m_transitionMatrix, 1);
-            m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
-
+            m_transitionMatrix = m_parseManager.ParseHeightLevel(m_backTracking, m_parseLevel);
+            Debug.LogWarning("Warning: Level Parsed. Saving the Transition Matrix is set to " + m_parseLevel);
+           
             //if(Parse())
             //{
             //    Generate();
             //}
         }
-    }
 
-    /// <summary>
-    /// Dump all levelobjects into the parse lists. 
-    /// </summary>
-    /// <returns></returns>
-    private bool GatherTiles()
-    {
-       // m_parseManager.ParseLevel();
+        if(Input.GetKeyDown(KeyCode.Space))
+        {
+            var textHeightLevel = m_generationManager.GenerateNumberLevel(m_transitionMatrix, m_backTracking);
+            if(textHeightLevel != "")
+            {
+                m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
 
-        //if(!m_parseManager.ParseLevel(out m_runtimeMatrix))
-        //{
-        //    Debug.LogWarning("ERROR: Parsing level.");
-        //    return false;
-        //}
-        //m_parseManager.ClearScene();
-        return true;
+                Debug.LogWarning("Warning: Level Generated");
+            }
+            else
+            {
+                Debug.LogError("Error: Generating level.");
+            }
+
+
+        }
     }
 
 

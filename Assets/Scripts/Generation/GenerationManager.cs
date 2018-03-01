@@ -251,106 +251,36 @@ public class GenerationManager : MonoBehaviour
     #endregion
 
     #region NumbersAsHeight
+
     [SerializeField]
     private GameObject tilePrefab;
     [SerializeField]
     private int m_levelLength = 10;
 
+    private Dictionary<string, List<int>> m_transitionMatrix;
     private List<GameObject> tiles;
+    private int m_backTracking;
 
     /// <summary>
     /// Generate a single level looking only at the one previous tile.
     /// </summary>
-    /// <param name="transitionMatrix"></param>
+    /// <param name="m_transitionMatrix"></param>
     public string GenerateNumberLevel(Dictionary<string, List<int>> transitionMatrix, int backTracking)
     {
+        m_transitionMatrix = new Dictionary<string, List<int>>(transitionMatrix);
+        m_backTracking     = backTracking;
         var output = "";
+        var randID = 0;
 
-        // start from the first from in the Dictonary
-        var value = transitionMatrix.First().Key;
-        for(int i = 0; i < m_levelLength / backTracking; i++)
+        var value = SelectInitialValue();
+        if(value == "") return output;
+
+        for(int i = 0; i < m_levelLength / m_backTracking; i++)
         {
-            value = value.Trim(' ');
-
-            // build each block at a time. 
-            for(int j = 0; j < value.Length; j++)
-            {
-                var valueChar = value[j];
-                if(valueChar == '[' || valueChar == ',') continue;
-                if(valueChar == ']') break;
-
-                // TODO: Write to file. 
-                // Output to text file/ debug output or list.
-                output += valueChar + ",";
-            }
-
-            var fromList = new List<int>();
-            var randID = 0;
-
-            // get the list from that from value.
-            if(transitionMatrix.ContainsKey(value))
-            {
-                fromList = transitionMatrix[value];
-
-                // TODO: Based on x number of previous tiles what is the next one going to be. 
-                // select random index/ value from the list.
-                randID = Random.Range(0, fromList.Count);
-            }
-            else
-            {
-                // TODO: If there isn't a window to look at use the singles transition matrix which deals with single numbers only. 
-                // Default to the first group for now. 
-                Debug.LogError("value " + value + " doesnt not exist.");
-                value = transitionMatrix.First().Key;
-
-                fromList = transitionMatrix[value];
-
-                // TODO: Based on x number of previous tiles what is the next one going to be. 
-                // select random index/ value from the list.
-                randID = Random.Range(0, fromList.Count);
-            }
-
-
-
-
-
-
-
-            
-            var back = 2;
-
-            var from = "";
-
-            for(int j = 0; j < backTracking; j++)
-            {
-                char symbol;
-                string height;
-                if(j == (backTracking - 1))
-                {
-                    symbol = ']';
-                    height = fromList[randID].ToString();
-                    from += ',' + height + symbol;
-                }
-                else
-                {
-                    if(j == 0)
-                    {
-                        symbol = '[';
-                    }
-                    else
-                    {
-                        symbol = ',';
-                    }
-
-                    height = output[output.Length - back].ToString();
-                    back += 2;
-
-                    from += symbol + height;
-                }
-                
-            }
-            // set from value as value.
-            value = from;
+            output += ConvertToPureCSV(value);
+                       
+            var toList = FindNextToken(value, out randID);
+            value = CreateNextBlock(toList, output, randID);
         }
         Debug.Log("Level Heights: " + output);
 
@@ -371,21 +301,188 @@ public class GenerationManager : MonoBehaviour
         for(int i = 0; i < textHeightLevel.Length; i++)
         {
             var elem = textHeightLevel[i];
-            var result = 0;
+            var heightID = 0;
 
-            if(!int.TryParse(elem.ToString(), out result)) continue;
+            if(!int.TryParse(elem.ToString(), out heightID))
+                continue;
 
             // Element is used as the index for the heights list. 
-            var heightID = int.Parse(elem.ToString());
             var yPos = heights[heightID];
             var xPos = startX;
 
             var tile = Instantiate(tilePrefab, new Vector2(xPos, yPos), Quaternion.identity);
             tiles.Add(tile);
 
-
             startX += increment;
         }
+    }
+
+    /// <summary>
+    /// Select the first Type in transition matrix which is the same size as the desired
+    ///     backtracking value. 
+    /// Throw warning message if failed.
+    /// </summary>
+    /// <returns></returns>
+    private string SelectInitialValue()
+    {
+        string value = "";
+        foreach(var matrix in m_transitionMatrix)
+        {
+            var fromValue = matrix.Key;
+            var items = Count(fromValue);
+
+            if(items == m_backTracking)
+            {
+                value = fromValue;
+                break;
+            }
+        }
+        if(value == "")
+        {
+            Debug.LogWarning("Warning: Type in transition Matrix of size - " + m_backTracking + " not found");
+        }
+        return value;
+    }
+
+
+    /// <summary>
+    /// Use the backtracking block, if a new block is created and doesn't exist in the m_transitionmatrix,
+    ///     use the individual values in the transition matrix.
+    /// </summary>
+    /// <param name="toList"></param>
+    /// <param name="randID"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    private List<int> FindNextToken(string value, out int randID)
+    {
+        // get the list from that from value.
+        if(!m_transitionMatrix.ContainsKey(value))
+        {
+            value = Last(value);
+        }
+
+        // select random index/ value from the list.
+        randID = Random.Range(0, m_transitionMatrix[value].Count);
+        return m_transitionMatrix[value];
+    }
+
+
+    /// <summary>
+    /// TODO: Error check
+    /// </summary>
+    /// <param name="output"></param>
+    /// <returns></returns>
+    private string Last(string valueStr)
+    {
+        var value = valueStr[valueStr.Length - 2].ToString();
+        var formattedValue = "[" + value + "]";
+        return formattedValue;
+    }
+
+
+
+    /// <summary>
+    /// Create the next block of numbers which are used for backtracking.
+    /// 
+    /// 
+    /// [0, 0,[1]],  
+    ///   |    |  
+    ///   |    |  
+    ///   |    Current number
+    ///   |     
+    ///   |
+    ///  The backtracking values.  
+    /// 
+    /// 
+    /// </summary>
+    /// <param name="toList"></param>
+    /// <param name="output"></param>
+    /// <param name="randID"></param>
+    /// <returns></returns>
+    private string CreateNextBlock(List<int> toList, string output, int randID)
+    {
+        char symbol;
+        string height;
+
+        var back = 2;
+        var from = "";
+
+
+        for(int j = 0; j < m_backTracking; j++)
+        {
+            // TODO: This is hacked in at the moment.
+            if(m_backTracking == 1)
+            {
+                symbol = ']';
+                height = toList[randID].ToString();
+                from += '[' + height + symbol;
+            }
+            else if(j == (m_backTracking - 1))
+            {
+                // TODO: Fix if backtracking is 1
+                symbol = ']';
+                height = toList[randID].ToString();
+                from += ',' + height + symbol;
+            }
+            else
+            {
+                if(j == 0)
+                {
+                    symbol = '[';
+                }
+                else
+                {
+                    symbol = ',';
+                }
+
+                height = output[output.Length - back].ToString();
+                back += 2;
+
+                from += symbol + height;
+            }
+        }
+        return from;
+    }
+
+    /// <summary>
+    /// Convert the block text into a csv format ready to be read by the sprite tile function.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    private string ConvertToPureCSV(string value)
+    {
+        var output = "";
+        value = value.Trim(' ');
+
+        // build each block at a time. 
+        for(int j = 0; j < value.Length; j++)
+        {
+            var valueChar = value[j];
+            if(valueChar == '[' || valueChar == ',') continue;
+            if(valueChar == ']') break;
+
+            output += valueChar + ",";
+        }
+        return output;
+    }
+
+
+    /// <summary>
+    /// Count all seperate non-symbol items.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    private int Count(string value)
+    {
+        value = value.Trim(' ', '[', ']');
+        
+        var count = 0;
+        foreach(var item in value)
+        {
+            if(item == ',') continue;
+            count++;
+        }
+        return count;
     }
 
     #endregion

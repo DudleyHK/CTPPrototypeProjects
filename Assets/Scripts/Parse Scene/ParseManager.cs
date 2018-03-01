@@ -6,15 +6,15 @@ using UnityEngine;
 
 
 public class ParseManager : MonoBehaviour
-{ 
+{
     #region SpriteTiles
 
     [SerializeField]
-    private List<SceneObject> m_sceneObjects    = new List<SceneObject>();
+    private List<SceneObject> m_sceneObjects = new List<SceneObject>();
     [SerializeField]
     private List<GameObject> m_visibleObjects;
 
-    
+
     /// <summary>
     /// Parse all features in the level. 
     /// </summary>
@@ -41,14 +41,14 @@ public class ParseManager : MonoBehaviour
                 {
                     findMatrix.AddRow(sceneObject.Name, m_sceneObjects[i + 1].Name);
                 }
-                
+
                 findMatrix.SetSizeAndPosition(sceneObject.Size, sceneObject.Position);
             }
             else
             {
                 var rtm = new RuntimeMatrix(sceneObject.Name);
                 rtm.SetSizeAndPosition(sceneObject.Size, sceneObject.Position);
-                
+
                 // HACK: If last i set to valut to default.
                 if(i == (m_sceneObjects.Count - 1))
                 {
@@ -106,7 +106,7 @@ public class ParseManager : MonoBehaviour
         /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(10, 2, 0), new Vector3(7, 1, 0)));
         /// m_sceneObjects.Add(new SceneObject("Circle", new Vector3(7, 7, 0), new Vector3(9, 1, 0)));
         /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(3, 11, 0), new Vector3(10, 1, 0)));
-        
+
         levelSize = 0;
 
         m_visibleObjects = new List<GameObject>(GameObject.FindGameObjectsWithTag("LevelObject"));
@@ -118,8 +118,8 @@ public class ParseManager : MonoBehaviour
 
         foreach(var obj in m_visibleObjects)
         {
-            var name     = obj.name;
-            var size     = obj.transform.lossyScale;
+            var name = obj.name;
+            var size = obj.transform.lossyScale;
             var position = obj.transform.position;
 
             m_sceneObjects.Add(new SceneObject(name, size, position));
@@ -137,8 +137,11 @@ public class ParseManager : MonoBehaviour
 
     [SerializeField]
     private Dictionary<string, List<int>> m_transitionMatrix = new Dictionary<string, List<int>>();
-    
+
     private List<int> m_tileHeights;
+
+
+
     /// <summary>
     /// This version is to order the tiles in order of x position. 
     /// </summary>
@@ -153,7 +156,7 @@ public class ParseManager : MonoBehaviour
         }
         m_visibleObjects = new List<GameObject>(tempVisibleObjects.OrderBy(n => n.transform.localPosition.x));
 
-       // TODO: Reset on command
+        // TODO: Reset on command
         m_tileHeights = new List<int>();
         foreach(var tile in m_visibleObjects)
         {
@@ -168,12 +171,16 @@ public class ParseManager : MonoBehaviour
     /// <summary>
     /// Add each to value to the bag of to values.
     /// </summary>
-    public Dictionary<string, List<int>> ParseHeightLevel(bool parseLevel = false)
+    public Dictionary<string, List<int>> ParseHeightLevel(int backTracking, bool parseLevel)
     {
-        // TODO: Load the m_transitionMatrix from the PlayerPrefs if it exists. 
         ClearTransitionMatrix();
         LoadTransitionMatrix();
-        ParseHeightInput(m_tileHeights, parseLevel);
+
+        if(parseLevel)
+        {
+            ParseHeightInput(m_tileHeights, backTracking);
+        }
+
         SaveTransitionMatrix();
 
         return m_transitionMatrix;
@@ -213,56 +220,78 @@ public class ParseManager : MonoBehaviour
     /// // NOTE: List<int> levelInput is hardcoded as type for the m_transitionMatrix
     /// </summary>
     /// <param name="parseLevel"></param>
-    private void ParseHeightInput(List<int> levelInput, bool parseLevel)
+    private void ParseHeightInput(List<int> levelInput, int backTracking)
     {
-        if(parseLevel)
+
+        // Calculate the transition of each level height using back tracking. 
+        for(var i = (backTracking - 1); i < levelInput.Count; i++)
         {
-             var m_backTracking = 3;
-            for(var i = (m_backTracking - 1); i < levelInput.Count; i++)
-            {
+            var toID = i + 1;
+            if(toID == levelInput.Count)
+                break;
 
-                // This loop calculates a new set of backtracking size. 
-                var back = 0;
-                var from = "[";
-                
-                for(int j = 0; j < m_backTracking; j++)
-                {
-                    char symbol;
-                    if(j == (m_backTracking - 1))
-                    {
-                        symbol = ']';
-                    }
-                    else
-                    {
-                        symbol = ',';
-                    }
-                    from += levelInput[i - back++].ToString() + symbol;
+            var fromBackBlock = BackTrackingBlock(levelInput, backTracking, i);
+            AddTransitionMatrix(levelInput, fromBackBlock, toID);
+        }
 
-                }
-                //////////////////////////
+        // Put this last so the singles are at the end of the block.
+        // Calculate the transitions of each individual level height. 
+        for(var i = 0; i < levelInput.Count; i++)
+        {
+            var toID = i + 1;
+            if(toID == levelInput.Count)
+                break;
 
-
-                var toID = i + 1;
-
-                if(toID == levelInput.Count)
-                    break;
-                
-                // From needs to transform the size of backtracking being enabled.
-
-                
-                
-                if(!m_transitionMatrix.ContainsKey(from))
-                {
-                    m_transitionMatrix.Add(from, new List<int>(new int[] { levelInput[toID] }));
-                }
-                else
-                {
-                    m_transitionMatrix[from].Add(levelInput[toID]);
-                }
-            }
+            var fromSingleBlock = BackTrackingBlock(levelInput, 1, i);
+            AddTransitionMatrix(levelInput, fromSingleBlock, toID);
         }
     }
 
+    /// <summary>
+    /// Add to already existing transition matrix, or create a new one. 
+    /// </summary>
+    /// <param name="levelInput"></param>
+    /// <param name="from"></param>
+    /// <param name="toID"></param>
+    private void AddTransitionMatrix(List<int> levelInput, string from, int toID)
+    {
+        if(!m_transitionMatrix.ContainsKey(from))
+        {
+            m_transitionMatrix.Add(from, new List<int>(new int[] { levelInput[toID] }));
+        }
+        else
+        {
+            m_transitionMatrix[from].Add(levelInput[toID]);
+        }
+    }
+
+    /// <summary>
+    /// Create a block of input of any amount. 
+    /// </summary>
+    /// <param name="levelInput"></param>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    private string BackTrackingBlock(List<int> levelInput, int backTracking, int index)
+    {
+        // This loop calculates a new set of backtracking size. 
+        var back = 0;
+        var from = "[";
+
+        for(int j = 0; j < backTracking; j++)
+        {
+            char symbol;
+            if(j == (backTracking - 1))
+            {
+                symbol = ']';
+            }
+            else
+            {
+                symbol = ',';
+            }
+            from += levelInput[index - back++].ToString() + symbol;
+        }
+        return from;
+    }
 
     // TODO: Put in utility function.
     private void SaveTransitionMatrix()
@@ -297,43 +326,41 @@ public class ParseManager : MonoBehaviour
         {
             // Read the file. 
             var streamReader = new System.IO.StreamReader(Application.dataPath + "/Resources" + "/TransitionMatrix.txt");
-            var type = "";
+            var fromValue = "";
             var line = "";
 
             // get the current line, while the current line is not null 
             while((line = streamReader.ReadLine()) != null)
             {
-                if(line == "") continue;
-                
+                if(line == "")
+                    continue;
+
 
                 // To get the correct char variables
                 var row = line.Split(new char[] { ':', ' ' });
-                
+
                 var typeChar = row[0][0]; // The first char in the first part of the row. 
-                var data     = row[1];    // Get a list of the values.
+                var rowData = row[1];    // Get a list of the values.
 
 
                 if(typeChar == 'T')
                 {
-                   foreach(var value in data)
-                   {                        
-                       type = value.ToString();
-                   
-                       if(m_transitionMatrix.ContainsKey(type)) continue;
-                   
-                       // Get the from part of this transition matrix row. 
-                       m_transitionMatrix.Add(type, new List<int>());
-                   }
+                    if(m_transitionMatrix.ContainsKey(rowData))
+                        break;
+
+                    // Get the from part of this transition matrix row. 
+                    m_transitionMatrix.Add(rowData, new List<int>());
+                    fromValue = rowData;
                 }
                 else if(typeChar == 'P')
                 {
-                    foreach(var value in data)
+                    foreach(var value in rowData)
                     {
                         if(value == ',') continue;
-                        if(m_transitionMatrix.ContainsKey(type))
+                        if(m_transitionMatrix.ContainsKey(fromValue))
                         {
                             // TODO: This is specific to a List<int>
-                            m_transitionMatrix[type].Add(int.Parse(value.ToString()));
+                            m_transitionMatrix[fromValue].Add(int.Parse(value.ToString()));
                         }
                         else
                         {
