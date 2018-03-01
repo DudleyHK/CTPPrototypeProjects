@@ -217,14 +217,40 @@ public class ParseManager : MonoBehaviour
     {
         if(parseLevel)
         {
-            for(var i = 0; i < levelInput.Count; i++)
+             var m_backTracking = 3;
+            for(var i = (m_backTracking - 1); i < levelInput.Count; i++)
             {
-                var from = levelInput[i].ToString();
+
+                // This loop calculates a new set of backtracking size. 
+                var back = 0;
+                var from = "[";
+                
+                for(int j = 0; j < m_backTracking; j++)
+                {
+                    char symbol;
+                    if(j == (m_backTracking - 1))
+                    {
+                        symbol = ']';
+                    }
+                    else
+                    {
+                        symbol = ',';
+                    }
+                    from += levelInput[i - back++].ToString() + symbol;
+
+                }
+                //////////////////////////
+
+
                 var toID = i + 1;
 
                 if(toID == levelInput.Count)
                     break;
+                
+                // From needs to transform the size of backtracking being enabled.
 
+                
+                
                 if(!m_transitionMatrix.ContainsKey(from))
                 {
                     m_transitionMatrix.Add(from, new List<int>(new int[] { levelInput[toID] }));
@@ -279,22 +305,25 @@ public class ParseManager : MonoBehaviour
             {
                 if(line == "") continue;
                 
+
                 // To get the correct char variables
                 var row = line.Split(new char[] { ':', ' ' });
                 
                 var typeChar = row[0][0]; // The first char in the first part of the row. 
                 var data     = row[1];    // Get a list of the values.
 
+
                 if(typeChar == 'T')
                 {
-                    foreach(var value in data)
-                    {                        
-                        if(value == ',') continue;
-
-                        // Get the from part of this transition matrix row. 
-                        type = value.ToString();
-                        m_transitionMatrix.Add(type, new List<int>());
-                    }
+                   foreach(var value in data)
+                   {                        
+                       type = value.ToString();
+                   
+                       if(m_transitionMatrix.ContainsKey(type)) continue;
+                   
+                       // Get the from part of this transition matrix row. 
+                       m_transitionMatrix.Add(type, new List<int>());
+                   }
                 }
                 else if(typeChar == 'P')
                 {

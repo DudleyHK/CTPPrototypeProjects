@@ -75,7 +75,7 @@ public class ToolManager : MonoBehaviour
         {
             m_transitionMatrix = m_parseManager.ParseHeightLevel(true);
 
-            var textHeightLevel = m_generationManager.GenerateNumberLevel(m_transitionMatrix);
+            var textHeightLevel = m_generationManager.GenerateNumberLevel(m_transitionMatrix, 1);
             m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
 
             //if(Parse())

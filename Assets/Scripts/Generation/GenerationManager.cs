@@ -262,28 +262,95 @@ public class GenerationManager : MonoBehaviour
     /// Generate a single level looking only at the one previous tile.
     /// </summary>
     /// <param name="transitionMatrix"></param>
-    public string GenerateNumberLevel(Dictionary<string, List<int>> transitionMatrix)
+    public string GenerateNumberLevel(Dictionary<string, List<int>> transitionMatrix, int backTracking)
     {
         var output = "";
 
         // start from the first from in the Dictonary
         var value = transitionMatrix.First().Key;
-        for(int i = 0; i < m_levelLength; i++)
+        for(int i = 0; i < m_levelLength / backTracking; i++)
         {
-            // TODO: Write to file. 
-            // Output to text file/ debug output or list.
-            output += value + ", ";
+            value = value.Trim(' ');
+
+            // build each block at a time. 
+            for(int j = 0; j < value.Length; j++)
+            {
+                var valueChar = value[j];
+                if(valueChar == '[' || valueChar == ',') continue;
+                if(valueChar == ']') break;
+
+                // TODO: Write to file. 
+                // Output to text file/ debug output or list.
+                output += valueChar + ",";
+            }
+
+            var fromList = new List<int>();
+            var randID = 0;
 
             // get the list from that from value.
-            var fromList = transitionMatrix[value];
+            if(transitionMatrix.ContainsKey(value))
+            {
+                fromList = transitionMatrix[value];
 
-            // TODO: Based on x number of previous tiles what is the next one going to be. 
-            // select random index/ value from the list.
-            var randID = Random.Range(0, fromList.Count);
-            var from = fromList[randID];
+                // TODO: Based on x number of previous tiles what is the next one going to be. 
+                // select random index/ value from the list.
+                randID = Random.Range(0, fromList.Count);
+            }
+            else
+            {
+                // TODO: If there isn't a window to look at use the singles transition matrix which deals with single numbers only. 
+                // Default to the first group for now. 
+                Debug.LogError("value " + value + " doesnt not exist.");
+                value = transitionMatrix.First().Key;
 
+                fromList = transitionMatrix[value];
+
+                // TODO: Based on x number of previous tiles what is the next one going to be. 
+                // select random index/ value from the list.
+                randID = Random.Range(0, fromList.Count);
+            }
+
+
+
+
+
+
+
+            
+            var back = 2;
+
+            var from = "";
+
+            for(int j = 0; j < backTracking; j++)
+            {
+                char symbol;
+                string height;
+                if(j == (backTracking - 1))
+                {
+                    symbol = ']';
+                    height = fromList[randID].ToString();
+                    from += ',' + height + symbol;
+                }
+                else
+                {
+                    if(j == 0)
+                    {
+                        symbol = '[';
+                    }
+                    else
+                    {
+                        symbol = ',';
+                    }
+
+                    height = output[output.Length - back].ToString();
+                    back += 2;
+
+                    from += symbol + height;
+                }
+                
+            }
             // set from value as value.
-            value = from.ToString();
+            value = from;
         }
         Debug.Log("Level Heights: " + output);
 
