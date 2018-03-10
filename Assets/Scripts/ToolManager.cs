@@ -4,19 +4,18 @@ using UnityEngine;
 
 public class ToolManager : MonoBehaviour
 {
+    // TODO: Add  
+
+
+
     [SerializeField]
     private List<GameObject> m_allParts = new List<GameObject>();
     [SerializeField]
     private List<RuntimeMatrix> m_runtimeMatrix;
-    [SerializeField]
-    private ParseManager m_parseManager;
-    [SerializeField]
-    private GenerationManager m_generationManager;
-    [SerializeField]
-    private uint m_levelSize = 0;
+    
 
     [SerializeField]
-    [Range(1, 5)]
+    [Range(1, 20)]
     private int m_backTracking = 3;
     [SerializeField]
     private List<float> m_heights;
@@ -37,7 +36,9 @@ public class ToolManager : MonoBehaviour
     [SerializeField]
     private float m_XSize = 69f; // NOTE: This is hardcoded for this sprite tilemap.
 
-    private Dictionary<string, List<int>> m_transitionMatrix;
+    private ParseManager m_parseManager;
+    private GenerationManager m_generationManager;
+    private uint m_levelSize = 0;
 
 
     private void Awake()
@@ -51,10 +52,8 @@ public class ToolManager : MonoBehaviour
             Debug.LogWarning("ERROR: Missing level objects in allParts list. Must contain all parts of a level.");
         }
 
-        if(!m_parseManager.InitSceneObjects(out m_levelSize))
-        {
-            Debug.LogWarning("ERROR: Initialising ParseManager scene objects failed.");
-        }
+        // This will load the transition matrix from the file. 
+        m_parseManager.ParseHeightLevel(0, false);
 
 
         // TODO: Check if height is < 0
@@ -66,9 +65,20 @@ public class ToolManager : MonoBehaviour
             m_heights.Add(m_lowestYPosition);
             m_lowestYPosition += m_YSize;
         }
+    }
 
-        // Gather all tiles of the scene, only once. 
-        m_parseManager.ParseLevel(m_heights);
+
+    private void OnEnable()
+    {
+        UIManager.generate += GenerateLevel;
+        UIManager.parse += ParseLevel;
+    }
+
+
+    private void OnDisable()
+    {
+        UIManager.generate -= GenerateLevel;
+        UIManager.parse -= ParseLevel;
     }
 
 
@@ -76,9 +86,6 @@ public class ToolManager : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Return))
         {
-            m_transitionMatrix = m_parseManager.ParseHeightLevel(m_backTracking, m_parseLevel);
-            Debug.LogWarning("Warning: Level Parsed. Saving the Transition Matrix is set to " + m_parseLevel);
-           
             //if(Parse())
             //{
             //    Generate();
@@ -87,26 +94,44 @@ public class ToolManager : MonoBehaviour
 
         if(Input.GetKeyDown(KeyCode.Space))
         {
-            var textHeightLevel = m_generationManager.GenerateNumberLevel(m_transitionMatrix, m_backTracking);
-            if(textHeightLevel != "")
-            {
-                m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
-
-                Debug.LogWarning("Warning: Level Generated");
-            }
-            else
-            {
-                Debug.LogError("Error: Generating level.");
-            }
-
-
         }
     }
 
 
-    private void Generate()
+    private void ParseLevel()
     {
-        if(!m_generationManager.Generate(m_runtimeMatrix, m_allParts, m_levelSize))
-            Debug.LogWarning("ERROR: Generating level.");
+        if(!m_parseManager.InitSceneObjects(out m_levelSize))
+        {
+            Debug.LogWarning("ERROR: Initialising ParseManager scene objects failed.");
+        }
+
+        // Gather all tiles of the scene, only once. 
+        m_parseManager.ParseLevel(m_heights);
+
+        m_parseManager.ParseHeightLevel(m_backTracking, m_parseLevel);
+        Debug.LogWarning("Level Parsed. Saving the Transition Matrix is set to " + m_parseLevel);
     }
+
+
+    private void GenerateLevel()
+    {
+        var textHeightLevel = m_generationManager.GenerateNumberLevel(m_parseManager.TransitionMatrix, m_backTracking);
+        if(textHeightLevel != "")
+        {
+            m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
+
+            Debug.LogWarning("Level Generated");
+        }
+        else
+        {
+            Debug.LogError("Error: Generating level.");
+        }
+    }
+
+
+    //private void Generate()
+    //{
+    //    if(!m_generationManager.Generate(m_runtimeMatrix, m_allParts, m_levelSize))
+    //        Debug.LogWarning("ERROR: Generating level.");
+    //}
 }

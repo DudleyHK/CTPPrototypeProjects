@@ -136,7 +136,7 @@ public class ParseManager : MonoBehaviour
     #region NumbersAsHeight
 
     [SerializeField]
-    private Dictionary<string, List<int>> m_transitionMatrix = new Dictionary<string, List<int>>();
+    public Dictionary<string, List<int>> TransitionMatrix = new Dictionary<string, List<int>>();
 
     private List<int> m_tileHeights;
 
@@ -171,7 +171,7 @@ public class ParseManager : MonoBehaviour
     /// <summary>
     /// Add each to value to the bag of to values.
     /// </summary>
-    public Dictionary<string, List<int>> ParseHeightLevel(int backTracking, bool parseLevel)
+    public void ParseHeightLevel(int backTracking, bool parseLevel)
     {
         ClearTransitionMatrix();
         LoadTransitionMatrix();
@@ -182,8 +182,6 @@ public class ParseManager : MonoBehaviour
         }
 
         SaveTransitionMatrix();
-
-        return m_transitionMatrix;
     }
 
 
@@ -208,10 +206,10 @@ public class ParseManager : MonoBehaviour
     /// </summary>
     private void ClearTransitionMatrix()
     {
-        if(m_transitionMatrix.Count <= 0 || m_transitionMatrix == null)
+        if(TransitionMatrix.Count <= 0 || TransitionMatrix == null)
             return;
 
-        m_transitionMatrix.Clear();
+        TransitionMatrix.Clear();
     }
 
 
@@ -222,7 +220,6 @@ public class ParseManager : MonoBehaviour
     /// <param name="parseLevel"></param>
     private void ParseHeightInput(List<int> levelInput, int backTracking)
     {
-
         // Calculate the transition of each level height using back tracking. 
         for(var i = (backTracking - 1); i < levelInput.Count; i++)
         {
@@ -255,13 +252,13 @@ public class ParseManager : MonoBehaviour
     /// <param name="toID"></param>
     private void AddTransitionMatrix(List<int> levelInput, string from, int toID)
     {
-        if(!m_transitionMatrix.ContainsKey(from))
+        if(!TransitionMatrix.ContainsKey(from))
         {
-            m_transitionMatrix.Add(from, new List<int>(new int[] { levelInput[toID] }));
+            TransitionMatrix.Add(from, new List<int>(new int[] { levelInput[toID] }));
         }
         else
         {
-            m_transitionMatrix[from].Add(levelInput[toID]);
+            TransitionMatrix[from].Add(levelInput[toID]);
         }
     }
 
@@ -300,7 +297,7 @@ public class ParseManager : MonoBehaviour
         {
             var streamWriter = new System.IO.StreamWriter(Application.dataPath + "/Resources" + "/TransitionMatrix.txt");
 
-            foreach(var fromValue in m_transitionMatrix)
+            foreach(var fromValue in TransitionMatrix)
             {
                 streamWriter.WriteLine("Type:" + fromValue.Key);
                 streamWriter.Write("Probabilities:");
@@ -345,11 +342,11 @@ public class ParseManager : MonoBehaviour
 
                 if(typeChar == 'T')
                 {
-                    if(m_transitionMatrix.ContainsKey(rowData))
+                    if(TransitionMatrix.ContainsKey(rowData))
                         break;
 
                     // Get the from part of this transition matrix row. 
-                    m_transitionMatrix.Add(rowData, new List<int>());
+                    TransitionMatrix.Add(rowData, new List<int>());
                     fromValue = rowData;
                 }
                 else if(typeChar == 'P')
@@ -357,10 +354,10 @@ public class ParseManager : MonoBehaviour
                     foreach(var value in rowData)
                     {
                         if(value == ',') continue;
-                        if(m_transitionMatrix.ContainsKey(fromValue))
+                        if(TransitionMatrix.ContainsKey(fromValue))
                         {
                             // TODO: This is specific to a List<int>
-                            m_transitionMatrix[fromValue].Add(int.Parse(value.ToString()));
+                            TransitionMatrix[fromValue].Add(int.Parse(value.ToString()));
                         }
                         else
                         {
