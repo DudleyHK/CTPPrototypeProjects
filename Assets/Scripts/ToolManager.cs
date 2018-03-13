@@ -11,12 +11,8 @@ public class ToolManager : MonoBehaviour
     [SerializeField]
     private List<GameObject> m_allParts = new List<GameObject>();
     [SerializeField]
-    private List<RuntimeMatrix> m_runtimeMatrix;
+    private GameObject m_playerPrefab;
     
-
-    [SerializeField]
-    [Range(1, 20)]
-    private int m_backTracking = 3;
     [SerializeField]
     private List<float> m_heights;
     [SerializeField]
@@ -38,7 +34,9 @@ public class ToolManager : MonoBehaviour
 
     private ParseManager m_parseManager;
     private GenerationManager m_generationManager;
+    private GameObject m_player;
     private uint m_levelSize = 0;
+    private int m_backTracking = 1;
 
 
     private void Awake()
@@ -65,6 +63,8 @@ public class ToolManager : MonoBehaviour
             m_heights.Add(m_lowestYPosition);
             m_lowestYPosition += m_YSize;
         }
+
+        ResetPlayer();
     }
 
 
@@ -72,6 +72,8 @@ public class ToolManager : MonoBehaviour
     {
         UIManager.generate += GenerateLevel;
         UIManager.parse += ParseLevel;
+        UIManager.resetLevel += ResetLevel;
+        UIManager.backtrackingChanged += OnBacktrackChange;
     }
 
 
@@ -79,6 +81,8 @@ public class ToolManager : MonoBehaviour
     {
         UIManager.generate -= GenerateLevel;
         UIManager.parse -= ParseLevel;
+        UIManager.resetLevel -= ResetLevel;
+        UIManager.backtrackingChanged -= OnBacktrackChange;
     }
 
 
@@ -119,6 +123,9 @@ public class ToolManager : MonoBehaviour
         if(textHeightLevel != "")
         {
             m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
+            // TODO: Add player manager.
+
+            ResetPlayer();
 
             Debug.LogWarning("Level Generated");
         }
@@ -126,6 +133,26 @@ public class ToolManager : MonoBehaviour
         {
             Debug.LogError("Error: Generating level.");
         }
+    }
+
+
+
+    private void ResetLevel()
+    {
+       ResetPlayer();
+    }
+
+
+    private void ResetPlayer()
+    {
+        if(m_player) Destroy(m_player);
+        m_player = Instantiate(m_playerPrefab);
+    }
+
+
+    private void OnBacktrackChange(int value)
+    {
+        m_backTracking = value;
     }
 
 

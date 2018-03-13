@@ -7,13 +7,37 @@ public class InputManager : MonoBehaviour
 {
     public List<InputAxisState> inputs = new List<InputAxisState>();
     public InputState inputState;
+    
 
-	
-	void Update () 
+    private void Start()
     {
-        foreach(var input in inputs)
+        FindPlayer();
+    }
+
+    private void Update() 
+    {
+        if(!inputState)
         {
-            inputState.SetButtonValue(input.button, input.value);
+            FindPlayer();
+            return;
         }
+
+        foreach(var input in inputs)
+            inputState.SetButtonValue(input.button, input.value);
 	}
+
+
+    private void FindPlayer()
+    {
+        var findPlayer = GameObject.FindGameObjectWithTag("Player");
+        if(!findPlayer)
+        {
+            Debug.Log("Player tag cannot be found or object is not set in the CameraManager class");
+            return;
+        }
+        else
+        {
+            inputState = findPlayer.GetComponent<InputState>();
+        }
+    }
 }
