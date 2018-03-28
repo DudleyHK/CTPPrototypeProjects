@@ -29,6 +29,22 @@ public class UIManager : MonoBehaviour
     }
 
 
+    private void Update()
+    {
+        if(Input.GetButtonDown("Back"))
+        {
+            ResetButton();
+        }
+
+        if(Input.GetKeyDown(KeyCode.Return))
+        {
+            GenerateEffect();
+        }
+
+        if(Input.GetKeyDown(KeyCode.Space))
+            ParseEffect();
+    }
+
     private void OnGUI()
     {
         GUI.color = Color.black;

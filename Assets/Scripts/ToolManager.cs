@@ -2,17 +2,27 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+public enum Prototype
+{
+    DeltaValues,
+    HeightValues
+}
+
+
+
 public class ToolManager : MonoBehaviour
 {
-    // TODO: Add  
-
+    // TODO: Add
+    [SerializeField]
+    private Prototype m_protoType = Prototype.DeltaValues;
 
 
     [SerializeField]
     private List<GameObject> m_allParts = new List<GameObject>();
     [SerializeField]
     private GameObject m_playerPrefab;
-    
+
     [SerializeField]
     private List<float> m_heights;
     [SerializeField]
@@ -20,13 +30,13 @@ public class ToolManager : MonoBehaviour
     [SerializeField]
     private bool m_parseLevel = true;
 
-    // TODO: Draw a gizmo box which changes size in the editor. 
+    // TODO: Draw a gizmo box which changes size in the editor.
     [SerializeField]
     private float m_lowestYPosition = 0;
     [SerializeField]
     private float m_lowestXPosition = 0;
 
-    // TODO: Draw a gizmo box which changes size in the editor. 
+    // TODO: Draw a gizmo box which changes size in the editor.
     [SerializeField]
     private float m_YSize = 69f; // NOTE: This is hardcoded for this sprite tilemap.
     [SerializeField]
@@ -34,6 +44,7 @@ public class ToolManager : MonoBehaviour
 
     private ParseManager m_parseManager;
     private GenerationManager m_generationManager;
+    private ParseDeltaFile m_parseDeltaFile;
     private GameObject m_player;
     private uint m_levelSize = 0;
     private int m_backTracking = 1;
@@ -45,25 +56,42 @@ public class ToolManager : MonoBehaviour
         m_parseManager = GetComponent<ParseManager>();
         m_generationManager = GetComponent<GenerationManager>();
 
-        if(m_allParts.Count <= 0)
+        if(m_protoType == Prototype.DeltaValues)
         {
-            Debug.LogWarning("ERROR: Missing level objects in allParts list. Must contain all parts of a level.");
+            m_parseDeltaFile = GetComponent<ParseDeltaFile>();
+            m_parseDeltaFile.ReadDeltaFile();
+            if(m_parseDeltaFile.Init)
+            {
+                var heights = m_parseDeltaFile.WorldHeightList(m_lowestYPosition);
+                m_generationManager.MapTiles(heights, m_lowestXPosition, m_XSize);
+            }
         }
-
-        // This will load the transition matrix from the file. 
-        m_parseManager.ParseHeightLevel(0, false);
-
-
-        // TODO: Check if height is < 0
-        // Calculate the number of tiles up. ie height of level. 
-        m_heights = new List<float>();
-
-        for(int i = 0; i < m_height; i++)
+        else
         {
-            m_heights.Add(m_lowestYPosition);
-            m_lowestYPosition += m_YSize;
-        }
+            // TODO: Error check these.
+            m_parseManager = GetComponent<ParseManager>();
+            m_generationManager = GetComponent<GenerationManager>();
 
+            if(m_allParts.Count <= 0)
+            {
+                Debug.LogWarning("ERROR: Missing level objects in allParts list. Must contain all parts of a level.");
+            }
+
+            // This will load the transition matrix from the file.
+            m_parseManager.ParseHeightLevel(0, false);
+
+
+            // TODO: Check if height is < 0
+            // Calculate the number of tiles up. ie height of level.
+            m_heights = new List<float>();
+
+            for(int i = 0; i < m_height; i++)
+            {
+                m_heights.Add(m_lowestYPosition);
+                m_lowestYPosition += m_YSize;
+            }
+        }
+        
         ResetPlayer();
     }
 
@@ -86,22 +114,6 @@ public class ToolManager : MonoBehaviour
     }
 
 
-    private void Update()
-    {
-        if(Input.GetKeyDown(KeyCode.Return))
-        {
-            //if(Parse())
-            //{
-            //    Generate();
-            //}
-        }
-
-        if(Input.GetKeyDown(KeyCode.Space))
-        {
-        }
-    }
-
-
     private void ParseLevel()
     {
         if(!m_parseManager.InitSceneObjects(out m_levelSize))
@@ -109,7 +121,7 @@ public class ToolManager : MonoBehaviour
             Debug.LogWarning("ERROR: Initialising ParseManager scene objects failed.");
         }
 
-        // Gather all tiles of the scene, only once. 
+        // Gather all tiles of the scene, only once.
         m_parseManager.ParseLevel(m_heights);
 
         m_parseManager.ParseHeightLevel(m_backTracking, m_parseLevel);

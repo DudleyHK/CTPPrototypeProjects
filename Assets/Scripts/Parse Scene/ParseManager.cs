@@ -16,14 +16,14 @@ public class ParseManager : MonoBehaviour
 
 
     /// <summary>
-    /// Parse all features in the level. 
+    /// Parse all features in the level.
     /// </summary>
     /// <returns></returns>
     public bool ParseLevel(out List<RuntimeMatrix> runtimeMatrix)
     {
         runtimeMatrix = new List<RuntimeMatrix>();
 
-        // Run through each object in the scene and add it to the runtime transition matrix. 
+        // Run through each object in the scene and add it to the runtime transition matrix.
         for(int i = 0; i <= (m_sceneObjects.Count - 1); i++)
         {
             var sceneObject = m_sceneObjects[i];
@@ -31,7 +31,7 @@ public class ParseManager : MonoBehaviour
 
             if(findMatrix != null)
             {
-                // HACK: 
+                // HACK:
                 if(i == (m_sceneObjects.Count - 1))
                 {
                     // Add the last value in a line end.
@@ -143,7 +143,7 @@ public class ParseManager : MonoBehaviour
 
 
     /// <summary>
-    /// This version is to order the tiles in order of x position. 
+    /// This version is to order the tiles in order of x position.
     /// </summary>
     /// <returns></returns>
     public bool ParseLevel(List<float> heights)
@@ -186,8 +186,8 @@ public class ParseManager : MonoBehaviour
 
 
     /// <summary>
-    /// Use with caution. 
-    /// Clears the transitionmatrix text file. 
+    /// Use with caution.
+    /// Clears the transitionmatrix text file.
     /// </summary>
     public static void FlushTextFile()
     {
@@ -202,7 +202,7 @@ public class ParseManager : MonoBehaviour
 
 
     /// <summary>
-    /// Clear the matrix is it has been tampered with in anyway. 
+    /// Clear the matrix is it has been tampered with in anyway.
     /// </summary>
     private void ClearTransitionMatrix()
     {
@@ -214,13 +214,13 @@ public class ParseManager : MonoBehaviour
 
 
     /// <summary>
-    /// if parselevel is true parse the heights passed in. 
+    /// if parselevel is true parse the heights passed in.
     /// // NOTE: List<int> levelInput is hardcoded as type for the m_transitionMatrix
     /// </summary>
     /// <param name="parseLevel"></param>
     private void ParseHeightInput(List<int> levelInput, int backTracking)
     {
-        // Calculate the transition of each level height using back tracking. 
+        // Calculate the transition of each level height using back tracking.
         for(var i = (backTracking - 1); i < levelInput.Count; i++)
         {
             var toID = i + 1;
@@ -232,7 +232,7 @@ public class ParseManager : MonoBehaviour
         }
 
         // Put this last so the singles are at the end of the block.
-        // Calculate the transitions of each individual level height. 
+        // Calculate the transitions of each individual level height.
         for(var i = 0; i < levelInput.Count; i++)
         {
             var toID = i + 1;
@@ -245,7 +245,7 @@ public class ParseManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Add to already existing transition matrix, or create a new one. 
+    /// Add to already existing transition matrix, or create a new one.
     /// </summary>
     /// <param name="levelInput"></param>
     /// <param name="from"></param>
@@ -263,14 +263,14 @@ public class ParseManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Create a block of input of any amount. 
+    /// Create a block of input of any amount.
     /// </summary>
     /// <param name="levelInput"></param>
     /// <param name="index"></param>
     /// <returns></returns>
     private string BackTrackingBlock(List<int> levelInput, int backTracking, int index)
     {
-        // This loop calculates a new set of backtracking size. 
+        // This loop calculates a new set of backtracking size.
         var back = 0;
         var from = "[";
 
@@ -321,12 +321,12 @@ public class ParseManager : MonoBehaviour
     {
         if(System.IO.File.Exists(Application.dataPath + "/Resources" + "/TransitionMatrix.txt"))
         {
-            // Read the file. 
+            // Read the file.
             var streamReader = new System.IO.StreamReader(Application.dataPath + "/Resources" + "/TransitionMatrix.txt");
             var fromValue = "";
             var line = "";
 
-            // get the current line, while the current line is not null 
+            // get the current line, while the current line is not null
             while((line = streamReader.ReadLine()) != null)
             {
                 if(line == "")
@@ -336,7 +336,7 @@ public class ParseManager : MonoBehaviour
                 // To get the correct char variables
                 var row = line.Split(new char[] { ':', ' ' });
 
-                var typeChar = row[0][0]; // The first char in the first part of the row. 
+                var typeChar = row[0][0]; // The first char in the first part of the row.
                 var rowData = row[1];    // Get a list of the values.
 
 
@@ -345,7 +345,7 @@ public class ParseManager : MonoBehaviour
                     if(TransitionMatrix.ContainsKey(rowData))
                         break;
 
-                    // Get the from part of this transition matrix row. 
+                    // Get the from part of this transition matrix row.
                     TransitionMatrix.Add(rowData, new List<int>());
                     fromValue = rowData;
                 }
@@ -367,7 +367,7 @@ public class ParseManager : MonoBehaviour
                 }
                 else
                 {
-                    // Do nothing. 
+                    // Do nothing.
                 }
             }
             streamReader.Close();
@@ -379,4 +379,7 @@ public class ParseManager : MonoBehaviour
     }
 
     #endregion
+
+
+
 }

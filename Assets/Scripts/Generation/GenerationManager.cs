@@ -318,6 +318,35 @@ public class GenerationManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Pass in tile heights to instantiate level
+    /// </summary>
+    /// <param name="heights"></param>
+    /// <param name="startX"></param>
+    /// <param name="increment"></param>
+    public void MapTiles(List<float> heights, float startX, float increment)
+    {
+        // Set level on screen to inactive.
+        if(tiles != null)
+            foreach(var tile in tiles)
+                Destroy(tile);
+        //////////////////////////////////
+        
+        
+        tiles = new List<GameObject>();
+        for(int i = 0; i < heights.Count; i++)
+        {
+            // Element is used as the index for the heights list. 
+            var yPos = heights[i];
+            var xPos = startX;
+
+            var tile = Instantiate(tilePrefab, new Vector2(xPos, yPos), Quaternion.identity);
+            tiles.Add(tile);
+
+            startX += increment;
+        }
+    }
+
+    /// <summary>
     /// Select the first Type in transition matrix which is the same size as the desired
     ///     backtracking value. 
     /// Throw warning message if failed.
@@ -339,7 +368,7 @@ public class GenerationManager : MonoBehaviour
         }
         if(value == "")
         {
-            Debug.LogWarning("Warning: Type in transition Matrix of size - " + m_backTracking + " not found");
+            Debug.LogWarning("Warning: Backtracking of " + m_backTracking + " not found in transition matrix file");
         }
         return value;
     }
