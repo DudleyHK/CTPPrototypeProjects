@@ -32,7 +32,7 @@ public class ToolManager : MonoBehaviour
 
     // TODO: Draw a gizmo box which changes size in the editor.
     [SerializeField]
-    private float m_lowestYPosition = 0;
+    private float m_lowestYPosition = -256;
     [SerializeField]
     private float m_lowestXPosition = 0;
 
@@ -55,43 +55,16 @@ public class ToolManager : MonoBehaviour
         // TODO: Error check these.
         m_parseManager = GetComponent<ParseManager>();
         m_generationManager = GetComponent<GenerationManager>();
+        m_parseDeltaFile = GetComponent<ParseDeltaFile>();
 
-        if(m_protoType == Prototype.DeltaValues)
+        m_parseManager.ParseHeightLevel(0, false);
+
+
+        if(m_allParts.Count <= 0)
         {
-            m_parseDeltaFile = GetComponent<ParseDeltaFile>();
-            m_parseDeltaFile.ReadDeltaFile();
-            if(m_parseDeltaFile.Init)
-            {
-                var heights = m_parseDeltaFile.WorldHeightList(m_lowestYPosition);
-                m_generationManager.MapTiles(heights, m_lowestXPosition, m_XSize);
-            }
+            Debug.LogWarning("Warning: Missing level objects in allParts list. Must contain all parts of a level.");
         }
-        else
-        {
-            // TODO: Error check these.
-            m_parseManager = GetComponent<ParseManager>();
-            m_generationManager = GetComponent<GenerationManager>();
 
-            if(m_allParts.Count <= 0)
-            {
-                Debug.LogWarning("ERROR: Missing level objects in allParts list. Must contain all parts of a level.");
-            }
-
-            // This will load the transition matrix from the file.
-            m_parseManager.ParseHeightLevel(0, false);
-
-
-            // TODO: Check if height is < 0
-            // Calculate the number of tiles up. ie height of level.
-            m_heights = new List<float>();
-
-            for(int i = 0; i < m_height; i++)
-            {
-                m_heights.Add(m_lowestYPosition);
-                m_lowestYPosition += m_YSize;
-            }
-        }
-        
         ResetPlayer();
     }
 
@@ -113,20 +86,34 @@ public class ToolManager : MonoBehaviour
         UIManager.backtrackingChanged -= OnBacktrackChange;
     }
 
-
+    /// <summary>
+    /// Based on which prototype chose a different parsing technique.
+    /// </summary>
     private void ParseLevel()
     {
         if(!m_parseManager.InitSceneObjects(out m_levelSize))
         {
             Debug.LogWarning("ERROR: Initialising ParseManager scene objects failed.");
+            return;
         }
 
-        // Gather all tiles of the scene, only once.
-        m_parseManager.ParseLevel(m_heights);
+        switch(m_protoType)
+        {
+            case Prototype.DeltaValues:
+                m_parseManager.ParseDeltaLevel(m_lowestYPosition);
+                break;
+            case Prototype.HeightValues:
+                m_parseManager.ParseLevel(m_heights);
+                break;
+            default:
+                print("OMG ! Whats going on here?");
+                break;
+        }
 
         m_parseManager.ParseHeightLevel(m_backTracking, m_parseLevel);
         Debug.LogWarning("Level Parsed. Saving the Transition Matrix is set to " + m_parseLevel);
     }
+
 
 
     private void GenerateLevel()
@@ -134,11 +121,18 @@ public class ToolManager : MonoBehaviour
         var textHeightLevel = m_generationManager.GenerateNumberLevel(m_parseManager.TransitionMatrix, m_backTracking);
         if(textHeightLevel != "")
         {
-            m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
-            // TODO: Add player manager.
-
+            switch(m_protoType)
+            {
+                case Prototype.DeltaValues:
+                    m_generationManager.MapTiles(textHeightLevel, m_lowestYPosition, m_lowestXPosition, m_XSize);
+                    break;
+                case Prototype.HeightValues:
+                    m_generationManager.MapTiles(m_heights, textHeightLevel, m_lowestXPosition, m_XSize);
+                    break;
+                default:
+                    break;
+            }
             ResetPlayer();
-
             Debug.LogWarning("Level Generated");
         }
         else
@@ -151,13 +145,14 @@ public class ToolManager : MonoBehaviour
 
     private void ResetLevel()
     {
-       ResetPlayer();
+        ResetPlayer();
     }
 
 
     private void ResetPlayer()
     {
-        if(m_player) Destroy(m_player);
+        if(m_player)
+            Destroy(m_player);
         m_player = Instantiate(m_playerPrefab);
     }
 

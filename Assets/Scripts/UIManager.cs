@@ -1,9 +1,12 @@
 ﻿using UnityEngine;
 
 public class UIManager : MonoBehaviour
-{ 
+{
     public delegate void Parse();
     public static event Parse parse;
+
+    public delegate void ParseDelta();
+    public static event ParseDelta parseDelta;
 
     public delegate void Generate();
     public static event Generate generate;
@@ -32,14 +35,10 @@ public class UIManager : MonoBehaviour
     private void Update()
     {
         if(Input.GetButtonDown("Back"))
-        {
             ResetButton();
-        }
 
         if(Input.GetKeyDown(KeyCode.Return))
-        {
             GenerateEffect();
-        }
 
         if(Input.GetKeyDown(KeyCode.Space))
             ParseEffect();
@@ -50,10 +49,10 @@ public class UIManager : MonoBehaviour
         GUI.color = Color.black;
 
         m_scrollPosition = GUILayout.BeginScrollView(
-            m_scrollPosition, 
-            GUILayout.Width(300), 
-            GUILayout.Height(450), 
-            GUILayout.ExpandHeight(true), 
+            m_scrollPosition,
+            GUILayout.Width(300),
+            GUILayout.Height(450),
+            GUILayout.ExpandHeight(true),
             GUILayout.ExpandWidth(true));
 
         GUILayout.Label(TransitionFileText());
@@ -89,16 +88,17 @@ public class UIManager : MonoBehaviour
 
     /// <summary>
     /// TODO: Put this in a better place for all classes to use.
+    /// TODO: only call if there is a change
     /// </summary>
     private string TransitionFileText()
     {
         var output = "";
         if(System.IO.File.Exists(Application.dataPath + "/Resources" + "/TransitionMatrix.txt"))
         {
-            // Read the file. 
+            // Read the file.
             var streamReader = new System.IO.StreamReader(Application.dataPath + "/Resources" + "/TransitionMatrix.txt");
             var line = "";
-            
+
             while((line = streamReader.ReadLine()) != null)
                 output += line + '\n';
             streamReader.Close();

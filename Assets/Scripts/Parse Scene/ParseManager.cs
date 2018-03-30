@@ -87,9 +87,7 @@ public class ParseManager : MonoBehaviour
     public void ClearScene()
     {
         foreach(var obj in m_visibleObjects)
-        {
             Destroy(obj);
-        }
     }
 
     /// <summary>
@@ -99,14 +97,6 @@ public class ParseManager : MonoBehaviour
     /// <returns></returns>
     public bool InitSceneObjects(out uint levelSize)
     {
-        /// Test Level Objects.
-        /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(5, 5, 0), new Vector3(1, 1, 0)));
-        /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(10, 5, 0), new Vector3(5, 1, 0)));
-        /// m_sceneObjects.Add(new SceneObject("Triangle", new Vector3(10, 5, 0), new Vector3(6, 1, 0)));
-        /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(10, 2, 0), new Vector3(7, 1, 0)));
-        /// m_sceneObjects.Add(new SceneObject("Circle", new Vector3(7, 7, 0), new Vector3(9, 1, 0)));
-        /// m_sceneObjects.Add(new SceneObject("Quad", new Vector3(3, 11, 0), new Vector3(10, 1, 0)));
-
         levelSize = 0;
 
         m_visibleObjects = new List<GameObject>(GameObject.FindGameObjectsWithTag("LevelObject"));
@@ -116,6 +106,8 @@ public class ParseManager : MonoBehaviour
             return false;
         }
 
+        m_visibleObjects = new List<GameObject>(m_visibleObjects.OrderBy(n => n.transform.localPosition.x));
+
         foreach(var obj in m_visibleObjects)
         {
             var name = obj.name;
@@ -123,8 +115,8 @@ public class ParseManager : MonoBehaviour
             var position = obj.transform.position;
 
             m_sceneObjects.Add(new SceneObject(name, size, position));
+            //Debug.Log("Tile X - " + position.x);
         }
-
         levelSize = (uint)m_sceneObjects.Count;
         return true;
     }
@@ -163,8 +155,31 @@ public class ParseManager : MonoBehaviour
             var heightID = heights.IndexOf(tile.transform.localPosition.y);
             m_tileHeights.Add(heightID);
         }
+        return true;
+    }
 
 
+
+    /// <summary>
+    /// Create a list of height IDs based on their offset from the previous token.
+    /// </summary>
+    /// <returns></returns>
+    public bool ParseDeltaLevel(float startYPosition)
+    {
+        var currHeight = m_visibleObjects[0].transform.localPosition.y;
+        var heightID = ParseDeltaFile.WorldHeightStep((int)currHeight, (int)startYPosition);
+
+        m_tileHeights = new List<int>();
+        m_tileHeights.Add(heightID);
+
+        for(int i = 1; i < m_visibleObjects.Count; i++)
+        {
+            var previousHeight = m_visibleObjects[i - 1].transform.localPosition.y;
+
+            currHeight = m_visibleObjects[i].transform.localPosition.y;
+            heightID = ParseDeltaFile.WorldHeightStep((int)currHeight, (int)previousHeight);
+            m_tileHeights.Add(heightID);
+        }
         return true;
     }
 
@@ -313,7 +328,7 @@ public class ParseManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("INVALID: File doesn't exist. transitionmatrix will start fresh.");
+            Debug.LogWarning("Warning: File doesn't exist. transitionmatrix will start fresh.");
         }
     }
 
@@ -332,13 +347,11 @@ public class ParseManager : MonoBehaviour
                 if(line == "")
                     continue;
 
-
                 // To get the correct char variables
                 var row = line.Split(new char[] { ':', ' ' });
 
                 var typeChar = row[0][0]; // The first char in the first part of the row.
                 var rowData = row[1];    // Get a list of the values.
-
 
                 if(typeChar == 'T')
                 {
@@ -351,13 +364,30 @@ public class ParseManager : MonoBehaviour
                 }
                 else if(typeChar == 'P')
                 {
-                    foreach(var value in rowData)
+                    for(var i = 0; i < rowData.Length; i++)
                     {
+                        var value = rowData[i];
                         if(value == ',') continue;
+
                         if(TransitionMatrix.ContainsKey(fromValue))
                         {
-                            // TODO: This is specific to a List<int>
-                            TransitionMatrix[fromValue].Add(int.Parse(value.ToString()));
+                            // Handle negitive values. 
+                            if(value == '-')
+                            {
+                                var next = rowData[i + 1];
+                                int result;
+
+                                if(int.TryParse(next.ToString(), out result))
+                                {
+                                    result *= -1;
+                                    TransitionMatrix[fromValue].Add(result);
+                                    i++; // Skip next value in list.
+                                }
+                            }
+                            else
+                            {
+                                TransitionMatrix[fromValue].Add(int.Parse(value.ToString()));
+                            }
                         }
                         else
                         {
@@ -374,7 +404,7 @@ public class ParseManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("INVALID: File doesn't exist. transitionmatrix will start fresh");
+            Debug.LogWarning("Warning: File doesn't exist. transitionmatrix will start fresh");
         }
     }
 

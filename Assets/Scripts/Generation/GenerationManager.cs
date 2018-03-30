@@ -268,17 +268,18 @@ public class GenerationManager : MonoBehaviour
     public string GenerateNumberLevel(Dictionary<string, List<int>> transitionMatrix, int backTracking)
     {
         m_transitionMatrix = new Dictionary<string, List<int>>(transitionMatrix);
-        m_backTracking     = backTracking;
+        m_backTracking = backTracking;
         var output = "";
         var randID = 0;
 
         var value = SelectInitialValue();
-        if(value == "") return output;
+        if(value == "")
+            return output;
 
         for(int i = 0; i < m_levelLength / m_backTracking; i++)
         {
             output += ConvertToPureCSV(value);
-                       
+
             var toList = FindNextToken(value, out randID);
             value = CreateNextBlock(toList, output, randID);
         }
@@ -323,26 +324,47 @@ public class GenerationManager : MonoBehaviour
     /// <param name="heights"></param>
     /// <param name="startX"></param>
     /// <param name="increment"></param>
-    public void MapTiles(List<float> heights, float startX, float increment)
+    public void MapTiles(string textHeightLevel, float startY, float startX, float increment)
     {
         // Set level on screen to inactive.
         if(tiles != null)
             foreach(var tile in tiles)
                 Destroy(tile);
         //////////////////////////////////
-        
-        
+
+        var currHeight = startY;
         tiles = new List<GameObject>();
-        for(int i = 0; i < heights.Count; i++)
+
+        for(int i = 0; i < textHeightLevel.Length; i++)
         {
-            // Element is used as the index for the heights list. 
-            var yPos = heights[i];
+            if(textHeightLevel[i] == ',') continue;
+            int id;
+           
+            // Handle Negitive String
+            if(textHeightLevel[i] == '-')
+            {
+                var next = textHeightLevel[i + 1];
+                if(int.TryParse(next.ToString(), out id))
+                {
+                    id *= -1;
+                    i++; // Skip next value in line.
+                }
+            }
+            else
+            {
+                // Positive value
+                id = int.Parse(textHeightLevel[i].ToString());
+            }
+
+
+            var yPos = ParseDeltaFile.HeightIDStep(id, (int)currHeight);
             var xPos = startX;
 
             var tile = Instantiate(tilePrefab, new Vector2(xPos, yPos), Quaternion.identity);
             tiles.Add(tile);
 
             startX += increment;
+            currHeight = yPos;
         }
     }
 
@@ -390,6 +412,7 @@ public class GenerationManager : MonoBehaviour
             value = Last(value);
         }
 
+        Debug.Log("transMat value - " + value + " and transmat count " + m_transitionMatrix[value].Count);
         // select random index/ value from the list.
         randID = Random.Range(0, m_transitionMatrix[value].Count);
         return m_transitionMatrix[value];
@@ -403,7 +426,23 @@ public class GenerationManager : MonoBehaviour
     /// <returns></returns>
     private string Last(string valueStr)
     {
-        var value = valueStr[valueStr.Length - 2].ToString();
+        string tmpval = "";
+        for(int i = valueStr.Length - 1; i >= 0; i--)
+        {
+            var valueChar = valueStr[i];
+            if(valueChar == ']') continue;
+            if(valueChar == ',') break;
+
+            tmpval += valueChar;
+        }
+
+        string value = "";
+        for(int i = tmpval.Length - 1; i >= 0; i--)
+        {
+            value += tmpval[i];
+        }
+
+
         var formattedValue = "[" + value + "]";
         return formattedValue;
     }
@@ -484,11 +523,22 @@ public class GenerationManager : MonoBehaviour
         value = value.Trim(' ');
 
         // build each block at a time. 
-        for(int j = 0; j < value.Length; j++)
+        for(int i = 0; i < value.Length; i++)
         {
-            var valueChar = value[j];
-            if(valueChar == '[' || valueChar == ',') continue;
-            if(valueChar == ']') break;
+            var valueChar = value[i];
+            if(valueChar == '[' || valueChar == ',')
+                continue;
+            if(valueChar == ']')
+                break;
+
+            // Handle negitive value
+            if(valueChar == '-')
+            {
+                output += valueChar;
+                output += value[i + 1] + ",";
+                i++; // skip next value
+                continue;
+            }
 
             output += valueChar + ",";
         }
@@ -504,11 +554,12 @@ public class GenerationManager : MonoBehaviour
     private int Count(string value)
     {
         value = value.Trim(' ', '[', ']');
-        
+
         var count = 0;
         foreach(var item in value)
         {
-            if(item == ',') continue;
+            if(item == ',')
+                continue;
             count++;
         }
         return count;

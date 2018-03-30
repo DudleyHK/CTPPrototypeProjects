@@ -7,7 +7,6 @@ using UnityEngine;
 
 public class ParseDeltaFile : MonoBehaviour
 {
-
     [HideInInspector]
     public bool Init { get; private set; }
 
@@ -45,25 +44,13 @@ public class ParseDeltaFile : MonoBehaviour
         if(!Init) return null;
         heights = new List<float>();
 
-        var currentHeight = HeightStep(values[0], (int)startYPosition);
+        var currentHeight = HeightIDStep(values[0], (int)startYPosition);
         heights.Add(currentHeight);
 
         for(int i = 1; i < values.Count; i++)
         {
-            currentHeight = HeightStep(values[i], currentHeight);
+            currentHeight = HeightIDStep(values[i], currentHeight);
             heights.Add(currentHeight);
-
-            ///var previousValue = values[i - 1];
-            ///if(values[i] != previousValue)
-            ///{
-            ///    // update height value.
-            ///    currentHeight = HeightStep(values[i], currentHeight);
-            ///    heights.Add(currentHeight);
-            ///}
-            ///else
-            ///{
-            ///    heights.Add(heights[i - 1]);
-            ///}
         }
         return heights;
     }
@@ -103,8 +90,14 @@ public class ParseDeltaFile : MonoBehaviour
     }
 
 
-
-    public int HeightStep(int id, int height)
+    /// <summary>
+    /// Return a Y displacemet value based on the current Height and 
+    ///     the height id.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="height"></param>
+    /// <returns></returns>
+    public static int HeightIDStep(int id, int height)
     {
         if(id < 0)
             for(var i = 0; i < Mathf.Abs(id); i++)
@@ -113,5 +106,14 @@ public class ParseDeltaFile : MonoBehaviour
             for(var i = 0; i < id; i++)
                 height += 69;
         return height;
+    }
+
+
+
+    // calculate the height ID given the current Height and height.
+    public static int WorldHeightStep(int currHeight, int height)
+    {
+        var dif = currHeight - height;
+        return (dif / 69); // 69 - tile size
     }
 }
